@@ -27,19 +27,25 @@ type StorageTypes = Vec<String>;
 #[derive(Debug, PartialEq)]
 struct BucketMetrics(HashMap<String, StorageTypes>);
 
+impl BucketMetrics {
+    // Return the bucket names from the BucketMetrics
+    fn bucket_names(&self) -> BucketNames {
+        self.0.iter().map(|(k, _v)| k.to_string()).collect()
+    }
+}
+
 impl From<Vec<Metric>> for BucketMetrics {
     fn from(metrics: Vec<Metric>) -> Self {
         let mut bucket_metrics = HashMap::new();
 
         for metric in metrics {
-            // If there are no dimensions, skip this metric.
-            if metric.dimensions.is_none() {
-                continue;
-            }
+            // Get the dimensions if any, otherwise skip to next iteration
+            let dimensions = match metric.dimensions {
+                Some(d) => d,
+                None    => continue,
+            };
 
-            // Unwrap the dimensions, guarded against panic above.
-            let dimensions = metric.dimensions.unwrap();
-
+            // Storage for what we'll pull out of the dimensions
             let mut name = String::new();
             let mut storage_types = vec![];
 
@@ -52,6 +58,7 @@ impl From<Vec<Metric>> for BucketMetrics {
                 }
             }
 
+            // Set the storage types for this bucket
             bucket_metrics.insert(name, storage_types);
         }
 
@@ -76,7 +83,7 @@ impl Client {
     // Return a list of S3 bucket names from CloudWatch.
     pub fn list_buckets(&self) -> Result<BucketNames> {
         let metrics: BucketMetrics = self.list_metrics()?.into();
-        let bucket_names           = self.bucket_names(metrics);
+        let bucket_names           = metrics.bucket_names();
 
         Ok(bucket_names)
     }
@@ -118,17 +125,6 @@ impl Client {
     // GetMetricsStatisticsInput.
     fn iso8601(&self, dt: DateTime<Utc>) -> String {
         dt.to_rfc3339_opts(SecondsFormat::Secs, true)
-    }
-
-    // Get a list of bucket names from the BucketMetrics
-    fn bucket_names(&self, input: BucketMetrics) -> BucketNames {
-        let mut bucket_names = BucketNames::new();
-
-        for key in input.0.keys() {
-            bucket_names.push(key.into());
-        }
-
-        bucket_names
     }
 
     // Get list of buckets with BucketSizeBytes metrics.
@@ -270,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn test_bucket_names() {
+    fn test_bucket_metrics_bucket_names() {
         let metrics = vec![
             Metric {
                 metric_name: Some("BucketSizeBytes".into()),
@@ -308,17 +304,13 @@ mod tests {
 
         // Get the above into our BucketMetrics
         let metrics: BucketMetrics = metrics.into();
+        let mut ret = metrics.bucket_names();
+        ret.sort();
 
         let expected = vec![
             "some-bucket-name",
             "some-other-bucket-name",
         ];
-
-        let client = mock_client(None);
-        let mut ret = Client::bucket_names(&client, metrics);
-
-        // Without sorting the order will be flakey
-        ret.sort();
 
         assert_eq!(ret, expected);
     }
@@ -332,8 +324,6 @@ mod tests {
 
         let client = mock_client(Some("cloudwatch-list-metrics.xml"));
         let mut ret = Client::list_buckets(&client).unwrap();
-
-        // Without sorting the order will be flakey
         ret.sort();
 
         assert_eq!(ret, expected);
