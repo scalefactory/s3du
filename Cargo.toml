@@ -1,0 +1,29 @@
+[package]
+name = "s3du"
+version = "0.1.0"
+authors = ["David O'Rourke <david.orourke@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+clap = "2.33"
+humansize = "1.1"
+
+[dependencies.rusoto_cloudwatch]
+version = "0.42.0"
+default-features = false
+features = ["rustls"]
+
+[dependencies.rusoto_core]
+version = "0.42.0"
+default-features = false
+features = ["rustls"]
+
+[dev-dependencies]
+pretty_assertions = "0.6"
+
+[dev-dependencies.rusoto_mock]
+version = "0.42.0"
+default-features = false
+features = ["rustls"]
