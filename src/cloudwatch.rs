@@ -300,4 +300,15 @@ mod tests {
 
         assert_eq!(ret, expected);
     }
+
+    #[test]
+    fn test_iso8601() {
+        let dt = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
+        let expected = "2020-03-01T00:16:27Z";
+
+        let client = mock_client(None);
+        let ret = Client::iso8601(&client, dt);
+
+        assert_eq!(ret, expected);
+    }
 }
