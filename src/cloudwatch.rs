@@ -1,5 +1,6 @@
 // s3du: A tool for informing you of the used space in AWS S3.
 use anyhow::{
+    anyhow,
     Context,
     Result,
 };
@@ -32,8 +33,14 @@ impl BucketMetrics {
     fn bucket_names(&self) -> BucketNames {
         self.0.iter().map(|(k, _v)| k.to_string()).collect()
     }
+
+    // Return storage types of a given bucket
+    fn storage_types(&self, bucket: &str) -> &StorageTypes {
+        self.0.get(bucket).unwrap()
+    }
 }
 
+// Conversion from a Vec<Metric> as returned by AWS to our BucketMetrics
 impl From<Vec<Metric>> for BucketMetrics {
     fn from(metrics: Vec<Metric>) -> Self {
         let mut bucket_metrics = HashMap::new();
@@ -66,8 +73,11 @@ impl From<Vec<Metric>> for BucketMetrics {
     }
 }
 
+// A RefCell is used to keep the external API immutable while we can change
+// metrics internally.
 pub struct Client {
-    client: CloudWatchClient,
+    client:  CloudWatchClient,
+    metrics: Option<BucketMetrics>,
 }
 
 impl Client {
@@ -76,14 +86,17 @@ impl Client {
         let client = CloudWatchClient::new(region);
 
         Client {
-            client: client,
+            client:  client,
+            metrics: None,
         }
     }
 
     // Return a list of S3 bucket names from CloudWatch.
-    pub fn list_buckets(&self) -> Result<BucketNames> {
+    pub fn list_buckets(&mut self) -> Result<BucketNames> {
         let metrics: BucketMetrics = self.list_metrics()?.into();
         let bucket_names           = metrics.bucket_names();
+
+        self.metrics = Some(metrics);
 
         Ok(bucket_names)
     }
@@ -96,27 +109,66 @@ impl Client {
         let now: DateTime<Utc> = Utc::now();
         let one_day = Duration::days(1);
 
-        // Dimensions for bucket selection
-        let dimensions = vec![
-            Dimension {
-                name:  "BucketName".into(),
-                value: bucket.into(),
-            },
-            Dimension {
-                name:  "StorageType".into(),
-                value: "StandardStorage".into(),
-            },
-        ];
-
-        let input = GetMetricStatisticsInput {
-            dimensions:  Some(dimensions),
-            end_time:    self.iso8601(now - one_day),
-            metric_name: S3_BUCKET_SIZE_BYTES.into(),
-            namespace:   S3_NAMESPACE.into(),
-            period:      one_day.num_seconds(),
-            start_time:  self.iso8601(now),
-            ..Default::default()
+        // We need to know which storage types are available for a bucket.
+        let metrics = match &self.metrics {
+            Some(m) => m,
+            None    => return Err(anyhow!("No bucket metrics")),
         };
+        let storage_types = metrics.storage_types(bucket);
+
+        // Create queries for each bucket storage type.
+        let iter = storage_types.iter();
+        let inputs: Vec<GetMetricStatisticsInput> = iter.map(|st| {
+            // Dimensions for bucket selection
+            let dimensions = vec![
+                Dimension {
+                    name:  "BucketName".into(),
+                    value: bucket.into(),
+                },
+                Dimension {
+                    name:  "StorageType".into(),
+                    value: st.into(),
+                },
+            ];
+
+            // Actual query
+            let input = GetMetricStatisticsInput {
+                dimensions:  Some(dimensions),
+                end_time:    self.iso8601(now),
+                metric_name: S3_BUCKET_SIZE_BYTES.into(),
+                namespace:   S3_NAMESPACE.into(),
+                period:      one_day.num_seconds(),
+                start_time:  self.iso8601(now - one_day),
+                statistics:  Some(vec!["Average".into()]),
+                unit:        Some("Bytes".into()),
+                ..Default::default()
+            };
+
+            input
+        })
+        .collect();
+
+        // Perform a query for each bucket storage type
+        for input in inputs {
+            let output = self.client.get_metric_statistics(input).sync()?;
+
+            // If we don't get any datapoints, proceed to the next input
+            let datapoints = match output.datapoints {
+                Some(d) => d,
+                None    => continue,
+            };
+
+            // We only use 24h of data, so there should only ever be one
+            // datapoint.
+            let datapoint = &datapoints[0];
+
+            // BucketSizeBytes only supports Average, so this should be safe
+            // to unwrap.
+            let bytes = datapoint.average.unwrap();
+
+            // Add up the size of each storage type
+            size = size + (bytes as u64);
+        }
 
         Ok(size)
     }
@@ -207,7 +259,8 @@ mod tests {
         );
 
         Client {
-            client: client,
+            client:  client,
+            metrics: None,
         }
     }
 
@@ -294,8 +347,8 @@ mod tests {
             "another-bucket-name",
         ];
 
-        let client = mock_client(Some("cloudwatch-list-metrics.xml"));
-        let mut ret = Client::list_buckets(&client).unwrap();
+        let mut client = mock_client(Some("cloudwatch-list-metrics.xml"));
+        let mut ret = Client::list_buckets(&mut client).unwrap();
         ret.sort();
 
         assert_eq!(ret, expected);
