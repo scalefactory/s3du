@@ -184,16 +184,16 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusoto_cloudwatch::Dimension;
+    use pretty_assertions::assert_eq;
     use rusoto_mock::{
         MockCredentialsProvider,
         MockRequestDispatcher,
         MockResponseReader,
         ReadMockResponse,
     };
-    use pretty_assertions::assert_eq;
 
-    // Create a mock CloudWatch client.
+    // Create a mock CloudWatch client, returning the data from the specified
+    // data_file.
     fn mock_client(data_file: Option<&str>) -> Client {
         let data = match data_file {
             None    => "".to_string(),
@@ -211,9 +211,9 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_bucket_metrics_from() {
-        let metrics = vec![
+    // Metrics used in the tests
+    fn get_metrics() -> Vec<Metric> {
+        vec![
             Metric {
                 metric_name: Some("BucketSizeBytes".into()),
                 namespace:   Some("AWS/S3".into()),
@@ -246,7 +246,12 @@ mod tests {
                     },
                 ]),
             },
-        ];
+        ]
+    }
+
+    #[test]
+    fn test_bucket_metrics_from() {
+        let metrics = get_metrics();
 
         // Get the above into our BucketMetrics
         let metrics: BucketMetrics = metrics.into();
@@ -267,40 +272,7 @@ mod tests {
 
     #[test]
     fn test_bucket_metrics_bucket_names() {
-        let metrics = vec![
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardIAStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-other-bucket-name".into(),
-                    },
-                ]),
-            },
-        ];
+        let metrics = get_metrics();
 
         // Get the above into our BucketMetrics
         let metrics: BucketMetrics = metrics.into();
