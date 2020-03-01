@@ -246,7 +246,10 @@ mod tests {
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
-    fn mock_client(data_file: Option<&str>) -> Client {
+    fn mock_client(
+        data_file: Option<&str>,
+        metrics: Option<BucketMetrics>,
+    ) -> Client {
         let data = match data_file {
             None    => "".to_string(),
             Some(d) => MockResponseReader::read_response("test-data", d.into()),
@@ -260,7 +263,7 @@ mod tests {
 
         Client {
             client:  client,
-            metrics: None,
+            metrics: metrics,
         }
     }
 
@@ -347,7 +350,10 @@ mod tests {
             "another-bucket-name",
         ];
 
-        let mut client = mock_client(Some("cloudwatch-list-metrics.xml"));
+        let mut client = mock_client(
+            Some("cloudwatch-list-metrics.xml"),
+            None,
+        );
         let mut ret = Client::list_buckets(&mut client).unwrap();
         ret.sort();
 
@@ -359,8 +365,26 @@ mod tests {
         let dt = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
         let expected = "2020-03-01T00:16:27Z";
 
-        let client = mock_client(None);
+        let client = mock_client(None, None);
         let ret = Client::iso8601(&client, dt);
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_bucket_size() {
+        let metrics = get_metrics();
+        let metrics: BucketMetrics = metrics.into();
+
+        let mut client = mock_client(
+            Some("cloudwatch-get-metric-statistics.xml"),
+            Some(metrics),
+        );
+
+        let bucket = "some-other-bucket-name";
+        let ret = Client::bucket_size(&client, bucket).unwrap();
+
+        let expected = 123456789;
 
         assert_eq!(ret, expected);
     }
