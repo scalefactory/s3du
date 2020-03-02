@@ -55,24 +55,8 @@ fn client(mode: ClientMode, region: Region) -> impl BucketSizer {
     }
 }
 
-fn main() -> Result<()> {
-    pretty_env_logger::init();
-
-    // Parse the CLI
-    let matches = cli::parse_args();
-
-    // This will come from CLI args in the future
-    // Get the client mode
-    let mode = value_t!(matches, "MODE", ClientMode)?;
-
-    // Get the AWS_REGION
-    // Safe to unwrap here as we validated the argument while parsing the CLI.
-    let region = matches.value_of("REGION").unwrap();
-    let region = Region::from_str(region)?;
-
-    // The region here will come from CLI args in the future
-    let mut client = client(mode, region);
-
+// du: Perform the actual get and output of the bucket sizes.
+fn du(mut client: impl BucketSizer) -> Result<()> {
     // List all of our buckets
     let bucket_names = client.list_buckets()?;
 
@@ -90,4 +74,26 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+// Entry point
+fn main() -> Result<()> {
+    pretty_env_logger::init();
+
+    // Parse the CLI
+    let matches = cli::parse_args();
+
+    // This will come from CLI args in the future
+    // Get the client mode
+    let mode = value_t!(matches, "MODE", ClientMode)?;
+
+    // Get the AWS_REGION
+    // Safe to unwrap here as we validated the argument while parsing the CLI.
+    let region = matches.value_of("REGION").unwrap();
+    let region = Region::from_str(region)?;
+
+    // The region here will come from CLI args in the future
+    let client = client(mode, region);
+
+    du(client)
 }
