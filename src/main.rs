@@ -40,17 +40,25 @@ fn client(mode: ClientMode, region: Region) -> impl BucketSizer {
 fn main() -> Result<()> {
     pretty_env_logger::init();
 
+    // This will come from CLI args in the future
     let mode = ClientMode::CloudWatch;
 
+    // The region here will come from CLI args in the future
     let mut client = client(mode, DEFAULT_REGION);
 
+    // List all of our buckets
     let bucket_names = client.list_buckets()?;
 
-    println!("{:?}", bucket_names);
+    debug!("main: Got bucket names: {:?}", bucket_names);
 
+    // For each bucket name, get the size
     for bucket in bucket_names {
         let size = client.bucket_size(&bucket)?;
+
+        // If the above didn't error, it should always be safe to unwrap the
+        // usize here.
         let size = size.file_size(file_size_opts::BINARY).unwrap();
+
         println!("{}: {}", bucket, size);
     }
 
