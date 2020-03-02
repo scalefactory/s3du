@@ -435,7 +435,7 @@ mod tests {
         let metrics = get_metrics();
         let metrics: BucketMetrics = metrics.into();
 
-        let mut client = mock_client(
+        let client = mock_client(
             Some("cloudwatch-get-metric-statistics.xml"),
             Some(metrics),
         );
