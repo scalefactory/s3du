@@ -1,6 +1,7 @@
 //! s3du: A tool for informing you of the used space in AWS S3.
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![allow(clippy::redundant_field_names)]
 use anyhow::Result;
 use clap::value_t;
 use humansize::{
