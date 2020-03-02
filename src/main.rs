@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use clap::value_t;
 use humansize::{
     file_size_opts,
     FileSize,
@@ -11,8 +12,7 @@ use log::{
     info,
 };
 use rusoto_core::Region;
-
-const DEFAULT_REGION: Region = Region::EuWest1;
+use std::str::FromStr;
 
 // These are used by the CloudWatch and S3 modes.
 type BucketNames = Vec<String>;
@@ -21,12 +21,28 @@ trait BucketSizer {
     fn bucket_size(&self, bucket: &str) -> Result<usize>;
 }
 
+mod cli;
 mod cloudwatch;
 
+// Valid modes that s3du can operate in.
 #[derive(Debug)]
 enum ClientMode {
     CloudWatch,
     S3,
+}
+
+// This is used to work out which mode we're in after parsing the CLI.
+// We shouldn't ever hit the error condition here.
+impl FromStr for ClientMode {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "cloudwatch" => Ok(Self::CloudWatch),
+            "s3"         => Ok(Self::S3),
+            _            => Err("no match"),
+        }
+    }
 }
 
 // Return the appropriate AWS client for fetching the bucket size
@@ -42,11 +58,20 @@ fn client(mode: ClientMode, region: Region) -> impl BucketSizer {
 fn main() -> Result<()> {
     pretty_env_logger::init();
 
+    // Parse the CLI
+    let matches = cli::parse_args();
+
     // This will come from CLI args in the future
-    let mode = ClientMode::CloudWatch;
+    // Get the client mode
+    let mode = value_t!(matches, "MODE", ClientMode)?;
+
+    // Get the AWS_REGION
+    // Safe to unwrap here as we validated the argument while parsing the CLI.
+    let region = matches.value_of("REGION").unwrap();
+    let region = Region::from_str(region)?;
 
     // The region here will come from CLI args in the future
-    let mut client = client(mode, DEFAULT_REGION);
+    let mut client = client(mode, region);
 
     // List all of our buckets
     let bucket_names = client.list_buckets()?;
