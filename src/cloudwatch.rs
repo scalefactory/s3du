@@ -6,6 +6,7 @@ use anyhow::{
 };
 use chrono::prelude::*;
 use chrono::Duration;
+use log::debug;
 use rusoto_core::Region;
 use rusoto_cloudwatch::{
     CloudWatch,
@@ -31,6 +32,11 @@ struct BucketMetrics(HashMap<String, StorageTypes>);
 impl BucketMetrics {
     // Return the bucket names from the BucketMetrics
     fn bucket_names(&self) -> BucketNames {
+        debug!(
+            "BucketMetrics::bucket_names: Returning names from: {:#?}",
+            self.0,
+        );
+
         self.0.iter().map(|(k, _v)| k.to_string()).collect()
     }
 
@@ -83,6 +89,11 @@ pub struct Client {
 impl Client {
     // Return a new CloudWatchClient in the specified region.
     pub fn new(region: Region) -> Self {
+        debug!(
+            "new: Creating CloudWatchClient in region '{}'",
+            region.name(),
+        );
+
         let client = CloudWatchClient::new(region);
 
         Client {
@@ -103,11 +114,9 @@ impl Client {
 
     // Get the size of a given bucket
     pub fn bucket_size(&self, bucket: &str) -> Result<u64> {
-        let mut size: u64 = 0;
+        debug!("bucket_size: Calculating size for '{}'", bucket);
 
-        // Get the time now so we can select the last 24 hours of metrics.
-        let now: DateTime<Utc> = Utc::now();
-        let one_day = Duration::days(1);
+        let mut size: u64 = 0;
 
         // We need to know which storage types are available for a bucket.
         let metrics = match &self.metrics {
@@ -115,6 +124,16 @@ impl Client {
             None    => return Err(anyhow!("No bucket metrics")),
         };
         let storage_types = metrics.storage_types(bucket);
+
+        debug!(
+            "bucket_size: Found storage types '{:?}' for '{}'",
+            storage_types,
+            bucket,
+        );
+
+        // Get the time now so we can select the last 24 hours of metrics.
+        let now: DateTime<Utc> = Utc::now();
+        let one_day = Duration::days(1);
 
         // Create queries for each bucket storage type.
         let iter = storage_types.iter();
@@ -150,7 +169,14 @@ impl Client {
 
         // Perform a query for each bucket storage type
         for input in inputs {
+            debug!(
+                "bucket_size: Performing API call for input: {:#?}",
+                input,
+            );
+
             let output = self.client.get_metric_statistics(input).sync()?;
+
+            debug!("bucket_size: API returned: {:#?}", output);
 
             // If we don't get any datapoints, proceed to the next input
             let datapoints = match output.datapoints {
@@ -169,6 +195,12 @@ impl Client {
             // Add up the size of each storage type
             size = size + (bytes as u64);
         }
+
+        debug!(
+            "bucket_size: Calculated bucket size for '{}' is '{}'",
+            bucket,
+            size,
+        );
 
         Ok(size)
     }
@@ -196,6 +228,8 @@ impl Client {
     //   namespace: Some("AWS/S3")
     // }
     fn list_metrics(&self) -> Result<Vec<Metric>> {
+        debug!("list_metrics: Listing...");
+
         let metric_name    = S3_BUCKET_SIZE_BYTES.to_string();
         let namespace      = S3_NAMESPACE.to_string();
         let mut metrics    = vec![];
@@ -216,6 +250,8 @@ impl Client {
                 .sync()?;
                 //.context("Failed to list metrics")?;
 
+            debug!("list_metrics: API returned: {:#?}", output);
+
             // If we get any metrics, append them to our vec
             match output.metrics {
                 Some(m) => metrics.append(&mut m.clone()),
@@ -228,6 +264,8 @@ impl Client {
                 None    => break,
             };
         }
+
+        debug!("list_metrics: Metrics collection: {:#?}", metrics);
 
         Ok(metrics)
     }
@@ -243,6 +281,12 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
+
+    // Possibly helpful while debugging tests.
+    fn init() {
+        // Try init because we can only init the logger once.
+        pretty_env_logger::try_init();
+    }
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
@@ -307,6 +351,8 @@ mod tests {
 
     #[test]
     fn test_bucket_metrics_from() {
+        init();
+
         let metrics = get_metrics();
 
         // Get the above into our BucketMetrics
@@ -328,6 +374,8 @@ mod tests {
 
     #[test]
     fn test_bucket_metrics_bucket_names() {
+        init();
+
         let metrics = get_metrics();
 
         // Get the above into our BucketMetrics
@@ -345,6 +393,8 @@ mod tests {
 
     #[test]
     fn test_list_buckets() {
+        init();
+
         let expected = vec![
             "a-bucket-name",
             "another-bucket-name",
@@ -373,6 +423,8 @@ mod tests {
 
     #[test]
     fn test_bucket_size() {
+        init();
+
         let metrics = get_metrics();
         let metrics: BucketMetrics = metrics.into();
 
