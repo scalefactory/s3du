@@ -84,7 +84,6 @@ fn main() -> Result<()> {
     // Parse the CLI
     let matches = cli::parse_args();
 
-    // This will come from CLI args in the future
     // Get the client mode
     let mode = value_t!(matches, "MODE", ClientMode)?;
 
