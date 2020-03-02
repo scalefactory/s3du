@@ -1,37 +1,58 @@
 // s3du: A tool for informing you of the used space in AWS S3.
-use anyhow::{
-    Context,
-    Result,
-};
+use anyhow::Result;
 use humansize::{
     file_size_opts,
     FileSize,
+};
+use log::{
+    debug,
+    info,
 };
 use rusoto_core::Region;
 
 const DEFAULT_REGION: Region = Region::EuWest1;
 
+// These are used by the CloudWatch and S3 modes.
+type BucketNames = Vec<String>;
+trait BucketSizer {
+    fn list_buckets(&mut self) -> Result<BucketNames>;
+    fn bucket_size(&self, bucket: &str) -> Result<usize>;
+}
+
 mod cloudwatch;
 
-fn main() -> Result<()> {
-    let mut cloudwatch_client = cloudwatch::Client::new(DEFAULT_REGION);
+#[derive(Debug)]
+enum ClientMode {
+    CloudWatch,
+    S3,
+}
 
-    let bucket_names = cloudwatch_client.list_buckets()
-        .context("Failed to list buckets")?;
+// Return the appropriate AWS client for fetching the bucket size
+fn client(mode: ClientMode, region: Region) -> impl BucketSizer {
+    info!("Fetching client in region {} for mode {:?}", region.name(), mode);
+
+    match mode {
+        ClientMode::CloudWatch => cloudwatch::Client::new(region),
+        ClientMode::S3         => unimplemented!(),
+    }
+}
+
+fn main() -> Result<()> {
+    pretty_env_logger::init();
+
+    let mode = ClientMode::CloudWatch;
+
+    let mut client = client(mode, DEFAULT_REGION);
+
+    let bucket_names = client.list_buckets()?;
 
     println!("{:?}", bucket_names);
 
     for bucket in bucket_names {
-        let size = cloudwatch_client.bucket_size(&bucket)?;
+        let size = client.bucket_size(&bucket)?;
         let size = size.file_size(file_size_opts::BINARY).unwrap();
         println!("{}: {}", bucket, size);
     }
-
-    //let metrics = cloudwatch_client.list_metrics(list_metrics_input)
-    //    .sync()
-    //    .context("Failed to list metrics")?;
-
-    //println!("{:?}", metrics);
 
     Ok(())
 }

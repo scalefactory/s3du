@@ -1,7 +1,6 @@
 // s3du: A tool for informing you of the used space in AWS S3.
 use anyhow::{
     anyhow,
-    Context,
     Result,
 };
 use chrono::prelude::*;
@@ -17,11 +16,14 @@ use rusoto_cloudwatch::{
     Metric,
 };
 use std::collections::HashMap;
+use super::{
+    BucketNames,
+    BucketSizer,
+};
 
-const S3_BUCKET_SIZE_BYTES: &str = "BucketSizeBytes";
+const S3_BUCKETSIZEBYTES: &str = "BucketSizeBytes";
 const S3_NAMESPACE: &str = "AWS/S3";
 
-type BucketNames = Vec<String>;
 type StorageTypes = Vec<String>;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
@@ -86,24 +88,9 @@ pub struct Client {
     metrics: Option<BucketMetrics>,
 }
 
-impl Client {
-    // Return a new CloudWatchClient in the specified region.
-    pub fn new(region: Region) -> Self {
-        debug!(
-            "new: Creating CloudWatchClient in region '{}'",
-            region.name(),
-        );
-
-        let client = CloudWatchClient::new(region);
-
-        Client {
-            client:  client,
-            metrics: None,
-        }
-    }
-
+impl BucketSizer for Client {
     // Return a list of S3 bucket names from CloudWatch.
-    pub fn list_buckets(&mut self) -> Result<BucketNames> {
+    fn list_buckets(&mut self) -> Result<BucketNames> {
         let metrics: BucketMetrics = self.list_metrics()?.into();
         let bucket_names           = metrics.bucket_names();
 
@@ -113,10 +100,10 @@ impl Client {
     }
 
     // Get the size of a given bucket
-    pub fn bucket_size(&self, bucket: &str) -> Result<u64> {
+    fn bucket_size(&self, bucket: &str) -> Result<usize> {
         debug!("bucket_size: Calculating size for '{}'", bucket);
 
-        let mut size: u64 = 0;
+        let mut size: usize = 0;
 
         // We need to know which storage types are available for a bucket.
         let metrics = match &self.metrics {
@@ -154,7 +141,7 @@ impl Client {
             let input = GetMetricStatisticsInput {
                 dimensions:  Some(dimensions),
                 end_time:    self.iso8601(now),
-                metric_name: S3_BUCKET_SIZE_BYTES.into(),
+                metric_name: S3_BUCKETSIZEBYTES.into(),
                 namespace:   S3_NAMESPACE.into(),
                 period:      one_day.num_seconds(),
                 start_time:  self.iso8601(now - one_day),
@@ -193,7 +180,7 @@ impl Client {
             let bytes = datapoint.average.unwrap();
 
             // Add up the size of each storage type
-            size = size + (bytes as u64);
+            size = size + (bytes as usize);
         }
 
         debug!(
@@ -204,6 +191,24 @@ impl Client {
 
         Ok(size)
     }
+}
+
+impl Client {
+    // Return a new CloudWatchClient in the specified region.
+    pub fn new(region: Region) -> Self {
+        debug!(
+            "new: Creating CloudWatchClient in region '{}'",
+            region.name(),
+        );
+
+        let client = CloudWatchClient::new(region);
+
+        Client {
+            client:  client,
+            metrics: None,
+        }
+    }
+
 
     // Return an ISO8601 formatted timestamp suitable for
     // GetMetricsStatisticsInput.
@@ -230,7 +235,7 @@ impl Client {
     fn list_metrics(&self) -> Result<Vec<Metric>> {
         debug!("list_metrics: Listing...");
 
-        let metric_name    = S3_BUCKET_SIZE_BYTES.to_string();
+        let metric_name    = S3_BUCKETSIZEBYTES.to_string();
         let namespace      = S3_NAMESPACE.to_string();
         let mut metrics    = vec![];
         let mut next_token = None;
@@ -285,7 +290,7 @@ mod tests {
     // Possibly helpful while debugging tests.
     fn init() {
         // Try init because we can only init the logger once.
-        pretty_env_logger::try_init();
+        let _ = pretty_env_logger::try_init();
     }
 
     // Create a mock CloudWatch client, returning the data from the specified
