@@ -14,13 +14,6 @@ use log::{
 use rusoto_core::Region;
 use std::str::FromStr;
 
-// These are used by the CloudWatch and S3 modes.
-type BucketNames = Vec<String>;
-trait BucketSizer {
-    fn list_buckets(&mut self) -> Result<BucketNames>;
-    fn bucket_size(&self, bucket: &str) -> Result<usize>;
-}
-
 mod cli;
 mod cloudwatch;
 
@@ -29,6 +22,13 @@ mod cloudwatch;
 enum ClientMode {
     CloudWatch,
     S3,
+}
+
+// These are used by the CloudWatch and S3 modes.
+type BucketNames = Vec<String>;
+trait BucketSizer {
+    fn list_buckets(&mut self) -> Result<BucketNames>;
+    fn bucket_size(&self, bucket: &str) -> Result<usize>;
 }
 
 // This is used to work out which mode we're in after parsing the CLI.
