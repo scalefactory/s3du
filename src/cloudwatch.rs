@@ -140,7 +140,7 @@ impl BucketSizer for Client {
             ];
 
             // Actual query
-            let input = GetMetricStatisticsInput {
+            GetMetricStatisticsInput {
                 dimensions:  Some(dimensions),
                 end_time:    self.iso8601(now),
                 metric_name: S3_BUCKETSIZEBYTES.into(),
@@ -150,9 +150,7 @@ impl BucketSizer for Client {
                 statistics:  Some(vec!["Average".into()]),
                 unit:        Some("Bytes".into()),
                 ..Default::default()
-            };
-
-            input
+            }
         })
         .collect();
 
@@ -182,7 +180,7 @@ impl BucketSizer for Client {
             let bytes = datapoint.average.unwrap();
 
             // Add up the size of each storage type
-            size = size + (bytes as usize);
+            size += bytes as usize;
         }
 
         debug!(
@@ -255,15 +253,13 @@ impl Client {
             // Call the API
             let output = self.client.list_metrics(list_metrics_input)
                 .sync()?;
-                //.context("Failed to list metrics")?;
 
             debug!("list_metrics: API returned: {:#?}", output);
 
             // If we get any metrics, append them to our vec
-            match output.metrics {
-                Some(m) => metrics.append(&mut m.clone()),
-                None    => {},
-            };
+            if let Some(m) = output.metrics {
+                metrics.append(&mut m.clone());
+            }
 
             // If there was a next token, use it, otherwise the loop is done.
             match output.next_token {
