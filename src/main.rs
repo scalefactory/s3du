@@ -17,34 +17,11 @@ use std::str::FromStr;
 
 mod cli;
 mod cloudwatch;
-
-// Valid modes that s3du can operate in.
-#[derive(Debug)]
-enum ClientMode {
-    CloudWatch,
-    S3,
-}
-
-// These are used by the CloudWatch and S3 modes.
-type BucketNames = Vec<String>;
-trait BucketSizer {
-    fn list_buckets(&mut self) -> Result<BucketNames>;
-    fn bucket_size(&self, bucket: &str) -> Result<usize>;
-}
-
-// This is used to work out which mode we're in after parsing the CLI.
-// We shouldn't ever hit the error condition here.
-impl FromStr for ClientMode {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "cloudwatch" => Ok(Self::CloudWatch),
-            "s3"         => Ok(Self::S3),
-            _            => Err("no match"),
-        }
-    }
-}
+mod types;
+use types::{
+    BucketSizer,
+    ClientMode,
+};
 
 // Return the appropriate AWS client for fetching the bucket size
 fn client(mode: ClientMode, region: Region) -> impl BucketSizer {
