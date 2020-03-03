@@ -109,9 +109,9 @@ impl BucketSizer for Client {
 
         // We need to know which storage types are available for a bucket.
         let metrics = match &self.metrics {
-            Some(m) => m,
-            None    => return Err(anyhow!("No bucket metrics")),
-        };
+            Some(m) => Ok(m),
+            None    => Err(anyhow!("No bucket metrics")),
+        }?;
         let storage_types = metrics.storage_types(bucket);
 
         debug!(

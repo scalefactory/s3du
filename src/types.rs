@@ -7,8 +7,8 @@ use std::str::FromStr;
 // These are used by the CloudWatch and S3 modes.
 pub type BucketNames = Vec<String>;
 pub trait BucketSizer {
-    fn list_buckets(&mut self) -> Result<BucketNames>;
     fn bucket_size(&self, bucket: &str) -> Result<usize>;
+    fn list_buckets(&mut self) -> Result<BucketNames>;
 }
 
 // Valid modes that s3du can operate in.
