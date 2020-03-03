@@ -17,8 +17,8 @@ use std::str::FromStr;
 
 mod cli;
 mod cloudwatch;
-mod types;
-use types::{
+mod common;
+use common::{
     BucketSizer,
     ClientMode,
 };

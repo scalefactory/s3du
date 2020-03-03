@@ -18,7 +18,7 @@ use rusoto_cloudwatch::{
     Metric,
 };
 use std::collections::HashMap;
-use super::types::{
+use super::common::{
     BucketNames,
     BucketSizer,
 };

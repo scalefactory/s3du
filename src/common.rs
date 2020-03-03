@@ -1,4 +1,4 @@
-//! s3du: A tool for informing you of the used space in AWS S3.
+// Common traits and types
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
@@ -6,6 +6,8 @@ use std::str::FromStr;
 
 // These are used by the CloudWatch and S3 modes.
 pub type BucketNames = Vec<String>;
+
+// BucketSizer trait implemented by cloudwatch and s3 mods
 pub trait BucketSizer {
     fn bucket_size(&self, bucket: &str) -> Result<usize>;
     fn list_buckets(&mut self) -> Result<BucketNames>;
