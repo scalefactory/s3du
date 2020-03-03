@@ -75,3 +75,32 @@ pub fn parse_args<'a>() -> ArgMatches<'a> {
 
     create_app().get_matches()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        FromStr,
+        Region,
+    };
+
+    #[test]
+    fn test_is_valid_aws_region() {
+        let tests = vec![
+            ("eu-central-1", true),
+            ("eu-west-1", true),
+            ("eu-west-2", true),
+            ("int-space-station-1", false),
+            ("nope-nope-42", false),
+            ("us-east-1", true),
+        ];
+
+        for test in tests {
+            let region = test.0;
+            let valid  = test.1;
+
+            let region = Region::from_str(region);
+
+            assert_eq!(region.is_ok(), valid);
+        }
+    }
+}
