@@ -148,7 +148,10 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
-    use rusoto_s3::Owner;
+    use rusoto_s3::{
+        Bucket,
+        Owner,
+    };
 
     // Possibly helpful while debugging tests.
     fn init() {
@@ -176,6 +179,41 @@ mod tests {
             client:  client,
             buckets: None,
         }
+    }
+
+    #[test]
+    fn test_bucketlist_from() {
+        let buckets = vec![
+            Bucket {
+                creation_date: Some("2020-03-12T14:45:00.000Z".into()),
+                name:          Some("a-bucket".into()),
+            },
+            Bucket {
+                creation_date: Some("2020-03-11T14:45:00.000Z".into()),
+                name:          Some("another-bucket".into()),
+            },
+        ];
+
+        let owner = Owner {
+            display_name: Some("aws".into()),
+            id:           Some("1936a5d8a2b189cda450d1d1d514f3861b3adc2df515".into()),
+        };
+
+        let output = ListBucketsOutput {
+            buckets: Some(buckets),
+            owner:   Some(owner),
+        };
+
+        let bucket_list: BucketList = output.into();
+        let mut bucket_names = bucket_list.bucket_names().to_owned();
+        bucket_names.sort();
+
+        let expected = vec![
+            "a-bucket",
+            "another-bucket",
+        ];
+
+        assert_eq!(bucket_names, expected);
     }
 
     #[test]
