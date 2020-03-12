@@ -140,81 +140,42 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
-    //use pretty_assertions::assert_eq;
-    //use rusoto_mock::{
-    //    MockCredentialsProvider,
-    //    MockRequestDispatcher,
-    //    MockResponseReader,
-    //    ReadMockResponse,
-    //};
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use rusoto_mock::{
+        MockCredentialsProvider,
+        MockRequestDispatcher,
+        MockResponseReader,
+        ReadMockResponse,
+    };
 
-    //// Possibly helpful while debugging tests.
-    //fn init() {
-    //    // Try init because we can only init the logger once.
-    //    let _ = pretty_env_logger::try_init();
-    //}
+    // Possibly helpful while debugging tests.
+    fn init() {
+        // Try init because we can only init the logger once.
+        let _ = pretty_env_logger::try_init();
+    }
 
     //// Create a mock CloudWatch client, returning the data from the specified
     //// data_file.
-    //fn mock_client(
-    //    data_file: Option<&str>,
-    //    metrics: Option<BucketMetrics>,
-    //) -> Client {
-    //    let data = match data_file {
-    //        None    => "".to_string(),
-    //        Some(d) => MockResponseReader::read_response("test-data", d.into()),
-    //    };
+    fn mock_client(
+        data_file: Option<&str>,
+    ) -> Client {
+        let data = match data_file {
+            None    => "".to_string(),
+            Some(d) => MockResponseReader::read_response("test-data", d.into()),
+        };
 
-    //    let client = CloudWatchClient::new_with(
-    //        MockRequestDispatcher::default().with_body(&data),
-    //        MockCredentialsProvider,
-    //        Default::default()
-    //    );
+        let client = S3Client::new_with(
+            MockRequestDispatcher::default().with_body(&data),
+            MockCredentialsProvider,
+            Default::default()
+        );
 
-    //    Client {
-    //        client:  client,
-    //        metrics: metrics,
-    //    }
-    //}
-
-    //// Metrics used in the tests
-    //fn get_metrics() -> Vec<Metric> {
-    //    vec![
-    //        Metric {
-    //            metric_name: Some("BucketSizeBytes".into()),
-    //            namespace:   Some("AWS/S3".into()),
-    //            dimensions:  Some(vec![
-    //                Dimension {
-    //                    name:  "StorageType".into(),
-    //                    value: "StandardStorage".into(),
-    //                },
-    //                Dimension {
-    //                    name:  "BucketName".into(),
-    //                    value: "some-bucket-name".into(),
-    //                },
-    //                Dimension {
-    //                    name:  "StorageType".into(),
-    //                    value: "StandardIAStorage".into(),
-    //                },
-    //            ]),
-    //        },
-    //        Metric {
-    //            metric_name: Some("BucketSizeBytes".into()),
-    //            namespace:   Some("AWS/S3".into()),
-    //            dimensions:  Some(vec![
-    //                Dimension {
-    //                    name:  "StorageType".into(),
-    //                    value: "StandardStorage".into(),
-    //                },
-    //                Dimension {
-    //                    name:  "BucketName".into(),
-    //                    value: "some-other-bucket-name".into(),
-    //                },
-    //            ]),
-    //        },
-    //    ]
-    //}
+        Client {
+            client:  client,
+            buckets: None,
+        }
+    }
 
     //#[test]
     //fn test_bucket_metrics_from() {
@@ -258,35 +219,23 @@ mod tests {
     //    assert_eq!(ret, expected);
     //}
 
-    //#[test]
-    //fn test_list_buckets() {
-    //    init();
+    #[test]
+    fn test_list_buckets() {
+        init();
 
-    //    let expected = vec![
-    //        "a-bucket-name",
-    //        "another-bucket-name",
-    //    ];
+        let expected = vec![
+            "a-bucket-name",
+            "another-bucket-name",
+        ];
 
-    //    let mut client = mock_client(
-    //        Some("cloudwatch-list-metrics.xml"),
-    //        None,
-    //    );
-    //    let mut ret = Client::list_buckets(&mut client).unwrap();
-    //    ret.sort();
+        let mut client = mock_client(
+            Some("s3-list-buckets.xml"),
+        );
+        let mut ret = Client::list_buckets(&mut client).unwrap();
+        ret.sort();
 
-    //    assert_eq!(ret, expected);
-    //}
-
-    //#[test]
-    //fn test_iso8601() {
-    //    let dt = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
-    //    let expected = "2020-03-01T00:16:27Z";
-
-    //    let client = mock_client(None, None);
-    //    let ret = Client::iso8601(&client, dt);
-
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 
     //#[test]
     //fn test_bucket_size() {

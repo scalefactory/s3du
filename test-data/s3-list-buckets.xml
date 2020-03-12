@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Owner>
+    <ID>1adb55c0de6bb25be50c5aab0f7d03427d9cee7a158605fe2963ce3dda1b756b</ID>
+    <DisplayName>s3du</DisplayName>
+  </Owner>
+  <Buckets>
+    <Bucket>
+      <Name>a-bucket-name</Name>
+      <CreationDate>2020-03-12T10:57:32.000Z</CreationDate>
+    </Bucket>
+    <Bucket>
+      <Name>another-bucket-name</Name>
+      <CreationDate>2020-03-10T10:58:12.000Z</CreationDate>
+    </Bucket>
+  </Buckets>
+</ListAllMyBucketsResult>
