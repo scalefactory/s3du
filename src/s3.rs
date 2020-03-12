@@ -156,8 +156,8 @@ mod tests {
         let _ = pretty_env_logger::try_init();
     }
 
-    //// Create a mock CloudWatch client, returning the data from the specified
-    //// data_file.
+    // Create a mock S3 client, returning the data from the specified
+    // data_file.
     fn mock_client(
         data_file: Option<&str>,
     ) -> Client {
@@ -203,7 +203,9 @@ mod tests {
         let mut client = mock_client(
             Some("s3-list-objects.xml"),
         );
-        let mut ret = Client::list_objects(&mut client, "test-bucket").unwrap();
+
+        let ret = Client::list_objects(&mut client, "test-bucket").unwrap();
+
         let owner = Owner {
             display_name: Some("aws".into()),
             id:           Some("1936a5d8a2b189cda450d1d1d514f3861b3adc2df515".into()),
