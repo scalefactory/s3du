@@ -148,6 +148,7 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
+    use rusoto_s3::Owner;
 
     // Possibly helpful while debugging tests.
     fn init() {
@@ -177,48 +178,6 @@ mod tests {
         }
     }
 
-    //#[test]
-    //fn test_bucket_metrics_from() {
-    //    init();
-
-    //    let metrics = get_metrics();
-
-    //    // Get the above into our BucketMetrics
-    //    let metrics: BucketMetrics = metrics.into();
-
-    //    let mut expected = HashMap::new();
-    //    expected.insert("some-bucket-name".into(), vec![
-    //        "StandardStorage".into(),
-    //        "StandardIAStorage".into(),
-    //    ]);
-    //    expected.insert("some-other-bucket-name".into(), vec![
-    //        "StandardStorage".into(),
-    //    ]);
-
-    //    let expected = BucketMetrics(expected);
-
-    //    assert_eq!(metrics, expected);
-    //}
-
-    //#[test]
-    //fn test_bucket_metrics_bucket_names() {
-    //    init();
-
-    //    let metrics = get_metrics();
-
-    //    // Get the above into our BucketMetrics
-    //    let metrics: BucketMetrics = metrics.into();
-    //    let mut ret = metrics.bucket_names();
-    //    ret.sort();
-
-    //    let expected = vec![
-    //        "some-bucket-name",
-    //        "some-other-bucket-name",
-    //    ];
-
-    //    assert_eq!(ret, expected);
-    //}
-
     #[test]
     fn test_list_buckets() {
         init();
@@ -233,6 +192,41 @@ mod tests {
         );
         let mut ret = Client::list_buckets(&mut client).unwrap();
         ret.sort();
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_list_objects() {
+        init();
+
+        let mut client = mock_client(
+            Some("s3-list-objects.xml"),
+        );
+        let mut ret = Client::list_objects(&mut client, "test-bucket").unwrap();
+        let owner = Owner {
+            display_name: Some("aws".into()),
+            id:           Some("1936a5d8a2b189cda450d1d1d514f3861b3adc2df515".into()),
+        };
+
+        let expected = vec![
+            Object {
+                e_tag:         Some("\"1d921b22129502cbbe5cbaf2c8bac682\"".into()),
+                key:           Some("file1".into()),
+                last_modified: Some("2020-03-12T11:04:09.000Z".into()),
+                owner:         Some(owner.to_owned()),
+                size:          Some(1024),
+                storage_class: Some("STANDARD".into()),
+            },
+            Object {
+                e_tag:         Some("\"1d921b22129502cbbe5cbaf2c8bac682\"".into()),
+                key:           Some("file2".into()),
+                last_modified: Some("2020-03-10T11:05:09.000Z".into()),
+                owner:         Some(owner.to_owned()),
+                size:          Some(32768),
+                storage_class: Some("STANDARD".into()),
+            },
+        ];
 
         assert_eq!(ret, expected);
     }
