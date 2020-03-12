@@ -231,23 +231,19 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    //#[test]
-    //fn test_bucket_size() {
-    //    init();
+    #[test]
+    fn test_bucket_size() {
+        init();
 
-    //    let metrics = get_metrics();
-    //    let metrics: BucketMetrics = metrics.into();
+        let client = mock_client(
+            Some("s3-list-objects.xml"),
+        );
 
-    //    let client = mock_client(
-    //        Some("cloudwatch-get-metric-statistics.xml"),
-    //        Some(metrics),
-    //    );
+        let bucket = "test-bucket";
+        let ret = Client::bucket_size(&client, bucket).unwrap();
 
-    //    let bucket = "some-other-bucket-name";
-    //    let ret = Client::bucket_size(&client, bucket).unwrap();
+        let expected = 33792;
 
-    //    let expected = 123456789;
-
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 }
