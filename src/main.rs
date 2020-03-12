@@ -22,19 +22,20 @@ use common::{
     BucketSizer,
     ClientMode,
 };
+mod s3;
 
 // Return the appropriate AWS client for fetching the bucket size
-fn client(mode: ClientMode, region: Region) -> impl BucketSizer {
+fn client(mode: ClientMode, region: Region) -> Box<dyn BucketSizer> {
     info!("Fetching client in region {} for mode {:?}", region.name(), mode);
 
     match mode {
-        ClientMode::CloudWatch => cloudwatch::Client::new(region),
-        ClientMode::S3         => unimplemented!(),
+        ClientMode::CloudWatch => Box::new(cloudwatch::Client::new(region)),
+        ClientMode::S3         => Box::new(s3::Client::new(region)),
     }
 }
 
 // du: Perform the actual get and output of the bucket sizes.
-fn du(mut client: impl BucketSizer) -> Result<()> {
+fn du(mut client: Box<dyn BucketSizer>) -> Result<()> {
     // List all of our buckets
     let bucket_names = client.list_buckets()?;
 

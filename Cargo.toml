@@ -3,6 +3,7 @@ name = "s3du"
 version = "0.1.0"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0"
@@ -10,7 +11,7 @@ chrono = "0.4"
 clap = "2.33"
 humansize = "1.1"
 log = "0.4"
-pretty_env_logger = "0.3"
+pretty_env_logger = "0.4"
 
 [dependencies.rusoto_cloudwatch]
 version = "0.42.0"
@@ -18,6 +19,11 @@ default-features = false
 features = ["rustls"]
 
 [dependencies.rusoto_core]
+version = "0.42.0"
+default-features = false
+features = ["rustls"]
+
+[dependencies.rusoto_s3]
 version = "0.42.0"
 default-features = false
 features = ["rustls"]
