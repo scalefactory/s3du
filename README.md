@@ -35,6 +35,19 @@ env AWS_REGION=us-east-1 s3du
 s3du --region=eu-central-1
 ```
 
+## Features
+
+The crate has two features, which are both enabled by default.
+
+| Feature      | Purpose                      |
+|--------------|------------------------------|
+| `cloudwatch` | Enable use of CloudWatch API |
+| `s3`         | Enable use of S3 API         |
+
+`s3du` requires at least one of these features be enabled, attempting to
+compile the crate with both features disabled will result in compilation
+errors.
+
 <!-- links -->
 [`aws-vault`]: https://github.com/99designs/aws-vault/
 [once per day]: https://docs.aws.amazon.com/AmazonS3/latest/dev/cloudwatch-monitoring.html
