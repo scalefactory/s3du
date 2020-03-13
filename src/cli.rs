@@ -15,14 +15,25 @@ use rusoto_core::Region;
 use std::str::FromStr;
 
 // Default mode that s3du runs in
+// This catches cases where we've compiled with either:
+//   - Only "cloudwatch"
+//   - Both "cloudwatch" and "s3"
+#[cfg(feature = "cloudwatch")]
 const DEFAULT_MODE: &str = "cloudwatch";
+
+// This catches cases where we've compiled with:
+//   - Only "s3"
+#[cfg(all(feature = "s3", not(feature = "cloudwatch")))]
+const DEFAULT_MODE: &str = "s3";
 
 // Default AWS region if one isn't provided on the command line
 const DEFAULT_REGION: &str = "eu-west-1";
 
 // This should match the string values in the ClientMode FromStr impl in main
 const VALID_MODES: &[&str] = &[
+    #[cfg(feature = "cloudwatch")]
     "cloudwatch",
+    #[cfg(feature = "s3")]
     "s3",
 ];
 

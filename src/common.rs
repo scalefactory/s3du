@@ -16,7 +16,9 @@ pub trait BucketSizer {
 // Valid modes that s3du can operate in.
 #[derive(Debug)]
 pub enum ClientMode {
+    #[cfg(feature = "cloudwatch")]
     CloudWatch,
+    #[cfg(feature = "s3")]
     S3,
 }
 
@@ -27,7 +29,9 @@ impl FromStr for ClientMode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            #[cfg(feature = "cloudwatch")]
             "cloudwatch" => Ok(Self::CloudWatch),
+            #[cfg(feature = "s3")]
             "s3"         => Ok(Self::S3),
             _            => Err("no match"),
         }

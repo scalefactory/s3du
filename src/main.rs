@@ -16,12 +16,15 @@ use rusoto_core::Region;
 use std::str::FromStr;
 
 mod cli;
-mod cloudwatch;
 mod common;
 use common::{
     BucketSizer,
     ClientMode,
 };
+
+#[cfg(feature = "cloudwatch")]
+mod cloudwatch;
+#[cfg(feature = "s3")]
 mod s3;
 
 // Return the appropriate AWS client for fetching the bucket size
@@ -29,7 +32,9 @@ fn client(mode: ClientMode, region: Region) -> Box<dyn BucketSizer> {
     info!("Fetching client in region {} for mode {:?}", region.name(), mode);
 
     match mode {
+        #[cfg(feature = "cloudwatch")]
         ClientMode::CloudWatch => Box::new(cloudwatch::Client::new(region)),
+        #[cfg(feature = "s3")]
         ClientMode::S3         => Box::new(s3::Client::new(region)),
     }
 }
