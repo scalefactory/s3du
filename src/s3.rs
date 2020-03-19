@@ -9,7 +9,9 @@ use log::debug;
 use rusoto_s3::{
     ListBucketsOutput,
     ListObjectsV2Request,
+    ListObjectVersionsRequest,
     Object,
+    ObjectVersion,
     S3,
     S3Client,
 };
@@ -108,6 +110,40 @@ impl Client {
             buckets:         None,
             object_versions: config.s3_object_versions,
         }
+    }
+
+    // List object versions and filter according to S3ObjectVersions
+    async fn list_object_versions(&self, bucket: &str) -> Result<Vec<ObjectVersion>> {
+        let mut next_key_marker        = None;
+        let mut next_version_id_marker = None;
+        let mut objects                = vec![];
+
+        loop {
+            let input = ListObjectVersionsRequest {
+                bucket:            bucket.into(),
+                key_marker:        next_key_marker.to_owned(),
+                version_id_marker: next_version_id_marker.to_owned(),
+                ..Default::default()
+            };
+
+            let output = self.client.list_object_versions(input).await?;
+
+            if let Some(versions) = output.versions {
+                objects.extend(versions);
+            }
+
+            if let Some(truncated) = output.is_truncated {
+                if truncated {
+                    next_key_marker        = output.next_key_marker;
+                    next_version_id_marker = output.next_version_id_marker;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+
+        Ok(objects)
     }
 
     // This is currently bad, the objects vec could be huge
