@@ -114,14 +114,12 @@ impl Client {
     async fn list_current_objects(&self, bucket: &str) -> Result<Vec<Object>> {
         let mut continuation_token = None;
         let mut objects            = vec![];
-        let mut start_after        = None;
 
         // Loop until all objects are processed.
         loop {
             let input = ListObjectsV2Request {
                 bucket:             bucket.into(),
-                continuation_token: continuation_token,
-                start_after:        start_after.to_owned(),
+                continuation_token: continuation_token.to_owned(),
                 ..Default::default()
             };
 
@@ -131,14 +129,16 @@ impl Client {
                 objects.extend(contents);
             }
 
-            if let Some(sa) = output.start_after {
-                start_after = Some(sa);
+            // If the output was truncated (Some(true)), we should have a
+            // next_continuation_token.
+            // If it wasn't, (Some(false) | None) we're done and can break.
+            match output.is_truncated {
+                Some(true) => {
+                    let nct = output.next_continuation_token;
+                    continuation_token = nct;
+                },
+                _ => break,
             }
-
-            match output.continuation_token {
-                Some(ct) => continuation_token = Some(ct),
-                None     => break,
-            };
         }
 
         Ok(objects)
