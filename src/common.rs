@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use rusoto_core::Region;
 use std::str::FromStr;
 
 // These are used by the CloudWatch and S3 modes.
@@ -9,12 +10,59 @@ pub type BucketNames = Vec<String>;
 
 // BucketSizer trait implemented by cloudwatch and s3 mods
 pub trait BucketSizer {
+    // Takes a bucket name and returns the bucket size in bytes
     fn bucket_size(&self, bucket: &str) -> Result<usize>;
+    // Returns a list of bucket names
     fn list_buckets(&mut self) -> Result<BucketNames>;
 }
 
-// Valid modes that s3du can operate in.
+#[cfg(feature = "s3")]
 #[derive(Debug)]
+pub enum S3ObjectVersions {
+    // Sum size of all object versions (both current and non-current)
+    All,
+    // Sum only size of current objects
+    Current,
+    // Sum only size of non-current objects
+    NonCurrent,
+}
+
+#[cfg(feature = "s3")]
+impl FromStr for S3ObjectVersions {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "all"         => Ok(Self::All),
+            "current"     => Ok(Self::Current),
+            "non-current" => Ok(Self::NonCurrent),
+            _             => Err("no match"),
+        }
+    }
+}
+
+// Client configuration
+#[derive(Debug)]
+pub struct ClientConfig {
+    pub mode:   ClientMode,
+    pub region: Region,
+    #[cfg(feature = "s3")]
+    pub s3_object_versions: S3ObjectVersions,
+}
+
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self {
+            mode:   ClientMode::CloudWatch,
+            region: Region::UsEast1,
+            #[cfg(feature = "s3")]
+            s3_object_versions: S3ObjectVersions::Current,
+        }
+    }
+}
+
+// Valid modes that s3du can operate in.
+#[derive(Debug, Eq, PartialEq)]
 pub enum ClientMode {
     #[cfg(feature = "cloudwatch")]
     CloudWatch,

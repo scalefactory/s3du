@@ -19,8 +19,12 @@ mod cli;
 mod common;
 use common::{
     BucketSizer,
+    ClientConfig,
     ClientMode,
 };
+
+#[cfg(feature = "s3")]
+use common::S3ObjectVersions;
 
 #[cfg(feature = "cloudwatch")]
 mod cloudwatch;
@@ -28,14 +32,17 @@ mod cloudwatch;
 mod s3;
 
 // Return the appropriate AWS client for fetching the bucket size
-fn client(mode: ClientMode, region: Region) -> Box<dyn BucketSizer> {
+fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
+    let mode   = &config.mode;
+    let region = &config.region;
+
     info!("Fetching client in region {} for mode {:?}", region.name(), mode);
 
     match mode {
         #[cfg(feature = "cloudwatch")]
-        ClientMode::CloudWatch => Box::new(cloudwatch::Client::new(region)),
+        ClientMode::CloudWatch => Box::new(cloudwatch::Client::new(config.region)),
         #[cfg(feature = "s3")]
-        ClientMode::S3         => Box::new(s3::Client::new(region)),
+        ClientMode::S3         => Box::new(s3::Client::new(config)),
     }
 }
 
@@ -75,8 +82,24 @@ fn main() -> Result<()> {
     let region = matches.value_of("REGION").unwrap();
     let region = Region::from_str(region)?;
 
+    let mut config = ClientConfig {
+        mode:   mode,
+        region: region,
+        ..Default::default()
+    };
+
+    #[cfg(feature = "s3")]
+    {
+        if config.mode == ClientMode::S3 {
+            let versions = matches.value_of("OBJECT_VERSIONS").unwrap();
+            let versions = S3ObjectVersions::from_str(versions).unwrap();
+
+            config.s3_object_versions = versions;
+        }
+    }
+
     // The region here will come from CLI args in the future
-    let client = client(mode, region);
+    let client = client(config);
 
     du(client)
 }

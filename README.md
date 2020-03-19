@@ -48,6 +48,92 @@ The crate has two features, which are both enabled by default.
 compile the crate with both features disabled will result in compilation
 errors.
 
+## AWS CloudWatch and AWS S3 Bucket Size Discrepancies
+
+The CloudWatch and S3 modes will report sizes slightly differently. The
+CloudWatch mode will always show the total bucket size, that is, it will show
+the size of all current objects versions + non-current object versions. It is
+not possible to change this behaviour.
+
+The S3 mode will, by default, only show the bucket size for current object
+versions. Command line flags (or environment variables) can be used to change
+how the S3 mode operates. With these you can change the S3 mode to operate in
+one of 3 ways:
+
+  - All: Show bucket size as the sum of all current object versions + all
+    non-current object versions.
+  - Current: Show bucket size as the sum of all current object versions, this
+    is the default.
+  - NonCurrent: Show bucket size as the sum of all non-current object versions.
+
+## IAM Policies
+
+In order to enable use of `s3du`, your IAM user or role will need one or both
+of the following IAM policies attached, depending on which `s3du` modes you
+wish to use.
+
+### CloudWatch IAM Policy
+
+This policy will enforce HTTPS use and will allow `s3du` access to the AWS
+CloudWatch `GetMetricStatistics` and `ListMetrics` APIs. CloudWatch use will
+be restricted to the `AWS/S3` namespace.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "s3du-cloudwatch",
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:GetMetricStatistics",
+                "cloudwatch:ListMetrics"
+            ],
+            "Resource": [
+                "*"
+            ],
+            "Condition": {
+                "Bool": {
+                    "aws:SecureTransport": true
+                },
+                "StringEquals": {
+                    "cloudwatch:namespace": "AWS/S3"
+                }
+            }
+        }
+    ]
+}
+```
+
+### S3 IAM Policy
+
+This policy will enforce HTTPS use and will allow `s3du` access to the AWS S3
+`ListAllMyBuckets` and `ListBucket` APIs.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "s3du-s3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "*"
+            ],
+            "Condition": {
+                "Bool": {
+                    "aws:SecureTransport": true
+                }
+            }
+        }
+    ]
+}
+```
+
 <!-- links -->
 [`aws-vault`]: https://github.com/99designs/aws-vault/
 [once per day]: https://docs.aws.amazon.com/AmazonS3/latest/dev/cloudwatch-monitoring.html

@@ -5,7 +5,6 @@ use anyhow::{
     Result,
 };
 use log::debug;
-use rusoto_core::Region;
 use rusoto_s3::{
     ListBucketsOutput,
     ListObjectsV2Request,
@@ -16,6 +15,8 @@ use rusoto_s3::{
 use super::common::{
     BucketNames,
     BucketSizer,
+    ClientConfig,
+    S3ObjectVersions,
 };
 
 struct BucketList(Vec<String>);
@@ -48,8 +49,9 @@ impl BucketList {
 // A RefCell is used to keep the external API immutable while we can change
 // metrics internally.
 pub struct Client {
-    client:  S3Client,
-    buckets: Option<BucketList>,
+    client:          S3Client,
+    buckets:         Option<BucketList>,
+    object_versions: S3ObjectVersions,
 }
 
 impl BucketSizer for Client {
@@ -89,7 +91,9 @@ impl BucketSizer for Client {
 
 impl Client {
     // Return a new CloudWatchClient in the specified region.
-    pub fn new(region: Region) -> Self {
+    pub fn new(config: ClientConfig) -> Self {
+        let region = config.region;
+
         debug!(
             "new: Creating S3Client in region '{}'",
             region.name(),
@@ -98,13 +102,14 @@ impl Client {
         let client = S3Client::new(region);
 
         Client {
-            client:  client,
-            buckets: None,
+            client:          client,
+            buckets:         None,
+            object_versions: config.s3_object_versions,
         }
     }
 
     // This is currently bad, the objects vec could be huge
-    fn list_objects(&self, bucket: &str) -> Result<Vec<Object>> {
+    fn list_current_objects(&self, bucket: &str) -> Result<Vec<Object>> {
         let mut continuation_token = None;
         let mut objects            = vec![];
         let mut start_after        = None;
@@ -135,6 +140,11 @@ impl Client {
         }
 
         Ok(objects)
+    }
+
+    // A wrapper to call the appropriate bucket listing functions
+    fn list_objects(&self, bucket: &str) -> Result<Vec<Object>> {
+        self.list_current_objects(bucket)
     }
 }
 
@@ -176,8 +186,9 @@ mod tests {
         );
 
         Client {
-            client:  client,
-            buckets: None,
+            client:          client,
+            buckets:         None,
+            object_versions: S3ObjectVersions::Current,
         }
     }
 

@@ -26,8 +26,15 @@ const DEFAULT_MODE: &str = "cloudwatch";
 #[cfg(all(feature = "s3", not(feature = "cloudwatch")))]
 const DEFAULT_MODE: &str = "s3";
 
+// Default object versions to sum in S3 mode
+#[cfg(feature = "s3")]
+const DEFAULT_OBJECT_VERSIONS: &str = "current";
+
 // Default AWS region if one isn't provided on the command line
 const DEFAULT_REGION: &str = "eu-west-1";
+
+// Default unit to display sizes in
+const DEFAULT_UNIT: &str = "binary";
 
 // This should match the string values in the ClientMode FromStr impl in main
 const VALID_MODES: &[&str] = &[
@@ -35,6 +42,14 @@ const VALID_MODES: &[&str] = &[
     "cloudwatch",
     #[cfg(feature = "s3")]
     "s3",
+];
+
+// This should match the ObjectVersions in the common.rs
+#[cfg(feature = "s3")]
+const S3_OBJECT_VERSIONS: &[&str] = &[
+    "all",
+    "current",
+    "non-current",
 ];
 
 // Ensures that the AWS region that we're passed is valid.
@@ -51,7 +66,7 @@ fn is_valid_aws_region(s: String) -> Result<(), String> {
 fn create_app<'a, 'b>() -> App<'a, 'b> {
     debug!("Creating CLI app");
 
-    App::new(crate_name!())
+    let app = App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())
@@ -79,6 +94,33 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .default_value(DEFAULT_REGION)
                 .validator(is_valid_aws_region)
         )
+        .arg(
+            Arg::with_name("UNIT")
+                .env("S3DU_UNIT")
+                .hide_env_values(true)
+                .long("unit")
+                .short("u")
+                .value_name("UNIT")
+                .help("Sets the unit to use for size display")
+                .takes_value(true)
+                .default_value(DEFAULT_UNIT)
+        );
+
+    #[cfg(feature = "s3")]
+    let app = app.arg(
+        Arg::with_name("OBJECT_VERSIONS")
+            .env("S3DU_OBJECT_VERSIONS")
+            .hide_env_values(true)
+            .long("s3-object-versions")
+            .short("o")
+            .value_name("VERSIONS")
+            .help("Set which object versions to sum in S3 mode")
+            .takes_value(true)
+            .default_value(DEFAULT_OBJECT_VERSIONS)
+            .possible_values(S3_OBJECT_VERSIONS)
+    );
+
+    app
 }
 
 pub fn parse_args<'a>() -> ArgMatches<'a> {
