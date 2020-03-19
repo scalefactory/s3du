@@ -4,6 +4,7 @@
 use anyhow::{
     Result,
 };
+use async_trait::async_trait;
 use log::debug;
 use rusoto_s3::{
     ListBucketsOutput,
@@ -54,10 +55,11 @@ pub struct Client {
     object_versions: S3ObjectVersions,
 }
 
+#[async_trait]
 impl BucketSizer for Client {
     // Return a list of S3 bucket names from CloudWatch.
-    fn list_buckets(&mut self) -> Result<BucketNames> {
-        let bucket_list: BucketList = self.client.list_buckets().sync()?.into();
+    async fn list_buckets(&mut self) -> Result<BucketNames> {
+        let bucket_list: BucketList = self.client.list_buckets().await?.into();
         let bucket_names            = bucket_list.bucket_names().to_owned();
 
         self.buckets = Some(bucket_list);
@@ -66,12 +68,12 @@ impl BucketSizer for Client {
     }
 
     // Get the size of a given bucket
-    fn bucket_size(&self, bucket: &str) -> Result<usize> {
+    async fn bucket_size(&self, bucket: &str) -> Result<usize> {
         debug!("bucket_size: Calculating size for '{}'", bucket);
 
         let mut size: usize = 0;
 
-        let objects = self.list_objects(bucket)?;
+        let objects = self.list_objects(bucket).await?;
 
         for object in objects {
             if let Some(s) = object.size {
@@ -109,7 +111,7 @@ impl Client {
     }
 
     // This is currently bad, the objects vec could be huge
-    fn list_current_objects(&self, bucket: &str) -> Result<Vec<Object>> {
+    async fn list_current_objects(&self, bucket: &str) -> Result<Vec<Object>> {
         let mut continuation_token = None;
         let mut objects            = vec![];
         let mut start_after        = None;
@@ -123,7 +125,7 @@ impl Client {
                 ..Default::default()
             };
 
-            let output = self.client.list_objects_v2(input).sync()?;
+            let output = self.client.list_objects_v2(input).await?;
 
             if let Some(contents) = output.contents {
                 objects.extend(contents);
@@ -143,8 +145,8 @@ impl Client {
     }
 
     // A wrapper to call the appropriate bucket listing functions
-    fn list_objects(&self, bucket: &str) -> Result<Vec<Object>> {
-        self.list_current_objects(bucket)
+    async fn list_objects(&self, bucket: &str) -> Result<Vec<Object>> {
+        self.list_current_objects(bucket).await
     }
 }
 
@@ -162,6 +164,7 @@ mod tests {
         Bucket,
         Owner,
     };
+    use tokio::runtime::Runtime;
 
     // Possibly helpful while debugging tests.
     fn init() {
@@ -239,7 +242,10 @@ mod tests {
         let mut client = mock_client(
             Some("s3-list-buckets.xml"),
         );
-        let mut ret = Client::list_buckets(&mut client).unwrap();
+        let mut ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::list_buckets(&mut client))
+            .unwrap();
         ret.sort();
 
         assert_eq!(ret, expected);
@@ -253,7 +259,10 @@ mod tests {
             Some("s3-list-objects.xml"),
         );
 
-        let ret = Client::list_objects(&mut client, "test-bucket").unwrap();
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::list_objects(&mut client, "test-bucket"))
+            .unwrap();
 
         let owner = Owner {
             display_name: Some("aws".into()),
@@ -291,7 +300,10 @@ mod tests {
         );
 
         let bucket = "test-bucket";
-        let ret = Client::bucket_size(&client, bucket).unwrap();
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::bucket_size(&client, bucket))
+            .unwrap();
 
         let expected = 33792;
 

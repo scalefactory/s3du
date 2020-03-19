@@ -14,6 +14,7 @@ use log::{
 };
 use rusoto_core::Region;
 use std::str::FromStr;
+use tokio::runtime::Runtime;
 
 mod cli;
 mod common;
@@ -47,15 +48,15 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
 }
 
 // du: Perform the actual get and output of the bucket sizes.
-fn du(mut client: Box<dyn BucketSizer>) -> Result<()> {
+async fn du(mut client: Box<dyn BucketSizer>) -> Result<()> {
     // List all of our buckets
-    let bucket_names = client.list_buckets()?;
+    let bucket_names = client.list_buckets().await?;
 
     debug!("main: Got bucket names: {:?}", bucket_names);
 
     // For each bucket name, get the size
     for bucket in bucket_names {
-        let size = client.bucket_size(&bucket)?;
+        let size = client.bucket_size(&bucket).await?;
 
         // If the above didn't error, it should always be safe to unwrap the
         // usize here.
@@ -101,5 +102,5 @@ fn main() -> Result<()> {
     // The region here will come from CLI args in the future
     let client = client(config);
 
-    du(client)
+    Runtime::new()?.block_on(du(client))
 }

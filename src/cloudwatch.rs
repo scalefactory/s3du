@@ -5,6 +5,7 @@ use anyhow::{
     anyhow,
     Result,
 };
+use async_trait::async_trait;
 use chrono::prelude::*;
 use chrono::Duration;
 use log::debug;
@@ -90,10 +91,11 @@ pub struct Client {
     metrics: Option<BucketMetrics>,
 }
 
+#[async_trait]
 impl BucketSizer for Client {
     // Return a list of S3 bucket names from CloudWatch.
-    fn list_buckets(&mut self) -> Result<BucketNames> {
-        let metrics: BucketMetrics = self.list_metrics()?.into();
+    async fn list_buckets(&mut self) -> Result<BucketNames> {
+        let metrics: BucketMetrics = self.list_metrics().await?.into();
         let bucket_names           = metrics.bucket_names();
 
         self.metrics = Some(metrics);
@@ -102,7 +104,7 @@ impl BucketSizer for Client {
     }
 
     // Get the size of a given bucket
-    fn bucket_size(&self, bucket: &str) -> Result<usize> {
+    async fn bucket_size(&self, bucket: &str) -> Result<usize> {
         debug!("bucket_size: Calculating size for '{}'", bucket);
 
         let mut size: usize = 0;
@@ -161,7 +163,7 @@ impl BucketSizer for Client {
                 input,
             );
 
-            let output = self.client.get_metric_statistics(input).sync()?;
+            let output = self.client.get_metric_statistics(input).await?;
 
             debug!("bucket_size: API returned: {:#?}", output);
 
@@ -232,7 +234,7 @@ impl Client {
     //   metric_name: Some("BucketSizeBytes"),
     //   namespace: Some("AWS/S3")
     // }
-    fn list_metrics(&self) -> Result<Vec<Metric>> {
+    async fn list_metrics(&self) -> Result<Vec<Metric>> {
         debug!("list_metrics: Listing...");
 
         let metric_name    = S3_BUCKETSIZEBYTES.to_string();
@@ -251,8 +253,7 @@ impl Client {
             };
 
             // Call the API
-            let output = self.client.list_metrics(list_metrics_input)
-                .sync()?;
+            let output = self.client.list_metrics(list_metrics_input).await?;
 
             debug!("list_metrics: API returned: {:#?}", output);
 
@@ -284,6 +285,7 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
+    use tokio::runtime::Runtime;
 
     // Possibly helpful while debugging tests.
     fn init() {
@@ -407,7 +409,10 @@ mod tests {
             Some("cloudwatch-list-metrics.xml"),
             None,
         );
-        let mut ret = Client::list_buckets(&mut client).unwrap();
+        let mut ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::list_buckets(&mut client))
+            .unwrap();
         ret.sort();
 
         assert_eq!(ret, expected);
@@ -437,7 +442,10 @@ mod tests {
         );
 
         let bucket = "some-other-bucket-name";
-        let ret = Client::bucket_size(&client, bucket).unwrap();
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::bucket_size(&client, bucket))
+            .unwrap();
 
         let expected = 123456789;
 

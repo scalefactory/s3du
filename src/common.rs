@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use async_trait::async_trait;
 use rusoto_core::Region;
 use std::str::FromStr;
 
@@ -9,11 +10,12 @@ use std::str::FromStr;
 pub type BucketNames = Vec<String>;
 
 // BucketSizer trait implemented by cloudwatch and s3 mods
+#[async_trait]
 pub trait BucketSizer {
     // Takes a bucket name and returns the bucket size in bytes
-    fn bucket_size(&self, bucket: &str) -> Result<usize>;
+    async fn bucket_size(&self, bucket: &str) -> Result<usize>;
     // Returns a list of bucket names
-    fn list_buckets(&mut self) -> Result<BucketNames>;
+    async fn list_buckets(&mut self) -> Result<BucketNames>;
 }
 
 #[cfg(feature = "s3")]
