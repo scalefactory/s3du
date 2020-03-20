@@ -36,12 +36,19 @@ const DEFAULT_REGION: &str = "eu-west-1";
 // Default unit to display sizes in
 const DEFAULT_UNIT: &str = "binary";
 
-// This should match the string values in the ClientMode FromStr impl in main
+// This should match the string values in the ClientMode FromStr impl in common
 const VALID_MODES: &[&str] = &[
     #[cfg(feature = "cloudwatch")]
     "cloudwatch",
     #[cfg(feature = "s3")]
     "s3",
+];
+
+// This should match the string values in the UnitSize FromStr impl in common
+const VALID_SIZE_UNITS: &[&str] = &[
+    "binary",
+    "bytes",
+    "decimal",
 ];
 
 // This should match the ObjectVersions in the common.rs
@@ -104,6 +111,7 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .help("Sets the unit to use for size display")
                 .takes_value(true)
                 .default_value(DEFAULT_UNIT)
+                .possible_values(VALID_SIZE_UNITS)
         );
 
     #[cfg(feature = "s3")]

@@ -22,6 +22,7 @@ use common::{
     BucketSizer,
     ClientConfig,
     ClientMode,
+    SizeUnit,
 };
 
 #[cfg(feature = "s3")]
@@ -47,8 +48,17 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
     }
 }
 
+// Return a filesize as a human readable size, if that was requested
+fn humansize(size: usize, unit: &SizeUnit) -> String {
+    match unit {
+        SizeUnit::Binary  => size.file_size(file_size_opts::BINARY).unwrap(),
+        SizeUnit::Bytes   => size.to_string(),
+        SizeUnit::Decimal => size.file_size(file_size_opts::DECIMAL).unwrap(),
+    }
+}
+
 // du: Perform the actual get and output of the bucket sizes.
-async fn du(mut client: Box<dyn BucketSizer>) -> Result<()> {
+async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
     // List all of our buckets
     let bucket_names = client.list_buckets().await?;
 
@@ -57,10 +67,7 @@ async fn du(mut client: Box<dyn BucketSizer>) -> Result<()> {
     // For each bucket name, get the size
     for bucket in bucket_names {
         let size = client.bucket_size(&bucket).await?;
-
-        // If the above didn't error, it should always be safe to unwrap the
-        // usize here.
-        let size = size.file_size(file_size_opts::BINARY).unwrap();
+        let size = humansize(size, &unit);
 
         println!("{}: {}", bucket, size);
     }
@@ -77,6 +84,9 @@ fn main() -> Result<()> {
 
     // Get the client mode
     let mode = value_t!(matches, "MODE", ClientMode)?;
+
+    // Get the unit size to display
+    let unit = value_t!(matches, "UNIT", SizeUnit)?;
 
     // Get the AWS_REGION
     // Safe to unwrap here as we validated the argument while parsing the CLI.
@@ -102,5 +112,5 @@ fn main() -> Result<()> {
     // The region here will come from CLI args in the future
     let client = client(config);
 
-    Runtime::new()?.block_on(du(client))
+    Runtime::new()?.block_on(du(client, unit))
 }
