@@ -10,8 +10,6 @@ use rusoto_s3::{
     ListBucketsOutput,
     ListObjectsV2Request,
     ListObjectVersionsRequest,
-    Object,
-    ObjectVersion,
     S3,
     S3Client,
 };
@@ -73,15 +71,7 @@ impl BucketSizer for Client {
     async fn bucket_size(&self, bucket: &str) -> Result<usize> {
         debug!("bucket_size: Calculating size for '{}'", bucket);
 
-        let mut size: usize = 0;
-
-        let objects = self.list_objects(bucket).await?;
-
-        for object in objects {
-            if let Some(s) = object.size {
-                size += s as usize;
-            }
-        }
+        let size = self.size_objects(bucket).await?;
 
         debug!(
             "bucket_size: Calculated bucket size for '{}' is '{}'",
@@ -113,10 +103,10 @@ impl Client {
     }
 
     // List object versions and filter according to S3ObjectVersions
-    async fn list_object_versions(&self, bucket: &str) -> Result<Vec<ObjectVersion>> {
+    async fn size_object_versions(&self, bucket: &str) -> Result<usize> {
         let mut next_key_marker        = None;
         let mut next_version_id_marker = None;
-        let mut objects                = vec![];
+        let mut size                   = 0;
 
         loop {
             let input = ListObjectVersionsRequest {
@@ -128,28 +118,56 @@ impl Client {
 
             let output = self.client.list_object_versions(input).await?;
 
+            // Depending on which object versions we're paying attention to,
+            // we may or may not filter here.
             if let Some(versions) = output.versions {
-                objects.extend(versions);
+                size += versions
+                    .iter()
+                    .filter_map(|v| {
+                        // Here we take out object version selection into
+                        // account. We only return v.size if we care about that
+                        // object version.
+                        let is_latest = v.is_latest.unwrap();
+
+                        match self.object_versions {
+                            S3ObjectVersions::All     => v.size,
+                            S3ObjectVersions::Current => {
+                                match is_latest {
+                                    true  => v.size,
+                                    false => None,
+                                }
+                            },
+                            S3ObjectVersions::NonCurrent => {
+                                match is_latest {
+                                    true  => None,
+                                    false => v.size,
+                                }
+                            },
+                        }
+                    })
+                    .sum::<i64>() as usize;
             }
 
-            if let Some(truncated) = output.is_truncated {
-                if truncated {
-                    next_key_marker        = output.next_key_marker;
-                    next_version_id_marker = output.next_version_id_marker;
-                }
-                else {
-                    break;
-                }
+            match output.is_truncated {
+                Some(true) => {
+                    let nkm  = output.next_key_marker;
+                    let nvim = output.next_version_id_marker;
+
+                    next_key_marker        = nkm;
+                    next_version_id_marker = nvim;
+                },
+                _ => break,
             }
         }
 
-        Ok(objects)
+        Ok(size)
     }
 
-    // This is currently bad, the objects vec could be huge
-    async fn list_current_objects(&self, bucket: &str) -> Result<Vec<Object>> {
+    // Return the size of current object versions in the bucket. Handles paging
+    // so should work on large buckets.
+    async fn size_current_objects(&self, bucket: &str) -> Result<usize> {
         let mut continuation_token = None;
-        let mut objects            = vec![];
+        let mut size               = 0;
 
         // Loop until all objects are processed.
         loop {
@@ -161,8 +179,12 @@ impl Client {
 
             let output = self.client.list_objects_v2(input).await?;
 
+            // Process the contents and add up the sizes
             if let Some(contents) = output.contents {
-                objects.extend(contents);
+                size += contents
+                    .iter()
+                    .filter_map(|o| o.size)
+                    .sum::<i64>() as usize;
             }
 
             // If the output was truncated (Some(true)), we should have a
@@ -177,12 +199,22 @@ impl Client {
             }
         }
 
-        Ok(objects)
+        Ok(size)
     }
 
     // A wrapper to call the appropriate bucket listing functions
-    async fn list_objects(&self, bucket: &str) -> Result<Vec<Object>> {
-        self.list_current_objects(bucket).await
+    async fn size_objects(&self, bucket: &str) -> Result<usize> {
+        match self.object_versions {
+            S3ObjectVersions::All => {
+                self.size_object_versions(bucket).await
+            },
+            S3ObjectVersions::Current => {
+                self.size_current_objects(bucket).await
+            },
+            S3ObjectVersions::NonCurrent => {
+                self.size_object_versions(bucket).await
+            },
+        }
     }
 }
 
@@ -212,6 +244,7 @@ mod tests {
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
+        versions:  S3ObjectVersions,
     ) -> Client {
         let data = match data_file {
             None    => "".to_string(),
@@ -227,7 +260,7 @@ mod tests {
         Client {
             client:          client,
             buckets:         None,
-            object_versions: S3ObjectVersions::Current,
+            object_versions: versions,
         }
     }
 
@@ -277,6 +310,7 @@ mod tests {
 
         let mut client = mock_client(
             Some("s3-list-buckets.xml"),
+            S3ObjectVersions::Current,
         );
         let mut ret = Runtime::new()
             .unwrap()
@@ -288,51 +322,12 @@ mod tests {
     }
 
     #[test]
-    fn test_list_objects() {
-        init();
-
-        let mut client = mock_client(
-            Some("s3-list-objects.xml"),
-        );
-
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::list_objects(&mut client, "test-bucket"))
-            .unwrap();
-
-        let owner = Owner {
-            display_name: Some("aws".into()),
-            id:           Some("1936a5d8a2b189cda450d1d1d514f3861b3adc2df515".into()),
-        };
-
-        let expected = vec![
-            Object {
-                e_tag:         Some("\"1d921b22129502cbbe5cbaf2c8bac682\"".into()),
-                key:           Some("file1".into()),
-                last_modified: Some("2020-03-12T11:04:09.000Z".into()),
-                owner:         Some(owner.to_owned()),
-                size:          Some(1024),
-                storage_class: Some("STANDARD".into()),
-            },
-            Object {
-                e_tag:         Some("\"1d921b22129502cbbe5cbaf2c8bac682\"".into()),
-                key:           Some("file2".into()),
-                last_modified: Some("2020-03-10T11:05:09.000Z".into()),
-                owner:         Some(owner.to_owned()),
-                size:          Some(32768),
-                storage_class: Some("STANDARD".into()),
-            },
-        ];
-
-        assert_eq!(ret, expected);
-    }
-
-    #[test]
     fn test_bucket_size() {
         init();
 
         let client = mock_client(
             Some("s3-list-objects.xml"),
+            S3ObjectVersions::Current,
         );
 
         let bucket = "test-bucket";
@@ -344,5 +339,54 @@ mod tests {
         let expected = 33792;
 
         assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_size_objects_current() {
+        init();
+
+        let mut client = mock_client(
+            Some("s3-list-objects.xml"),
+            S3ObjectVersions::Current,
+        );
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::size_objects(&mut client, "test-bucket"))
+            .unwrap();
+
+        let expected = 33_792;
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_size_objects_all_noncurrent() {
+        init();
+
+        // Current expects 0 here because our mock client won't return any
+        // objects. This is handled in another test.
+        let tests = vec![
+            (S3ObjectVersions::All,        600_732),
+            (S3ObjectVersions::Current,    0),
+            (S3ObjectVersions::NonCurrent, 166_498),
+        ];
+
+        for test in tests {
+            let versions      = test.0;
+            let expected_size = test.1;
+
+            let mut client = mock_client(
+                Some("s3-list-object-versions.xml"),
+                versions,
+            );
+
+            let ret = Runtime::new()
+                .unwrap()
+                .block_on(Client::size_objects(&mut client, "test-bucket"))
+                .unwrap();
+
+            assert_eq!(ret, expected_size);
+        }
     }
 }
