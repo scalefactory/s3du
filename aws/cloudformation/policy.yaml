@@ -1,0 +1,219 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Create and manage policies for s3du.'
+
+Parameters:
+  CloudWatchPolicy:
+    Description: >
+      Create and attach a policy allowing s3du to get metrics via CloudWatch.
+      This should allow cheaper s3du runs at the expense of the data not being
+      quite as up to date, as CloudWatch only updates S3 bucket sizes every
+      24 hours.
+    Type: 'String'
+    Default: 'Enabled'
+    AllowedValues:
+      - 'Enabled'
+      - 'Disabled'
+  GroupName:
+    Description: >
+      In "Users" mode, policies are attached to users via an IAM group. This
+      setting controls the name of that group.
+    Type: 'String'
+    Default: 's3du'
+  GroupPath:
+    Description: 'IAM path to create the group under'
+    Type: 'String'
+    Default: '/'
+  ManagementMode:
+    Description: 'Manage policies for a created IAM role or existing users'
+    Type: 'String'
+    Default: 'Role'
+    AllowedValues:
+      - 'Role'
+      - 'Users'
+  RoleName:
+    Description: 'If using Role mode, what should the created role be called'
+    Type: 'String'
+    Default: 's3du'
+    AllowedPattern: '^[a-zA-Z0-9_\+=,\.@-]+$'
+  RoleMaxSessionDuration:
+    Description: 'Maximum session duration for role assumption, in seconds'
+    Type: 'Number'
+    Default: 3600
+    MinValue: 3600
+    MaxValue: 43200
+  RolePath:
+    Description: 'IAM path to create the role under'
+    Type: 'String'
+    Default: '/'
+  S3Policy:
+    Description: >
+      Create and attach a policy allowing s3du to get metrics via S3. This is
+      the most accurate method of running s3du, but could be more expensive
+      depending on the size of your buckets.
+    Type: 'String'
+    Default: 'Enabled'
+    AllowedValues:
+      - 'Enabled'
+      - 'Disabled'
+  Users:
+    Description: >
+      If using Users mode, which users should we attach the policy to? Note
+      that this CloudFormation template will not create new users, it will
+      simply attach the policy to existing users. We also cannot check for
+      validity here. Specifying non-existant users will likely cause the Stack
+      application to fail.
+    Type: 'CommaDelimitedList'
+    Default: ''
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Management Configuration'
+        Parameters:
+          - 'ManagementMode'
+      - Labels:
+          default: 'Enabled Policies'
+        Parameters:
+          - 'CloudWatchPolicy'
+          - 'S3Policy'
+      - Label:
+          default: 'Role Mode Settings'
+        Parameters:
+          - 'RoleName'
+          - 'RoleMaxSessionDuration'
+          - 'RolePath'
+      - Label:
+          default: 'Users Mode Settings'
+        Parameters:
+          - 'GroupName'
+          - 'GroupPath'
+          - 'Users'
+
+Conditions:
+  # Controls whether the policy we create is attached to users or not
+  AttachPolicyToUsers: !Equals
+    - !Ref 'ManagementMode'
+    - 'Users'
+  # Controls creation and attachment of a CloudWatch policy
+  CreateCloudWatchPolicy: !Equals
+    - !Ref 'CloudWatchPolicy'
+    - 'Enabled'
+  # Controls the creation of an IAM role
+  CreateIAMRole: !Equals
+    - !Ref 'ManagementMode'
+    - 'Role'
+  # Controls creation and attachment of a S3 policy
+  CreateS3Policy: !Equals
+    - !Ref 'S3Policy'
+    - 'Enabled'
+
+Resources:
+  # Creates an IAM role if the Role ManagementMode was chosen.
+  Role:
+    Type: 'AWS::IAM::Role'
+    Condition: 'CreateIAMRole'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action:
+              - 'sts:AssumeRole'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+      Description: 'Role assumed to use s3du'
+      MaxSessionDuration: !Ref 'RoleMaxSessionDuration'
+      Path: !Ref 'RolePath'
+      RoleName: !Ref 'RoleName'
+
+  # Creates an IAM group if the Users management mode was chosen.
+  Group:
+    Type: 'AWS::IAM::Group'
+    Condition: 'AttachPolicyToUsers'
+    Properties:
+      GroupName: !Ref 'GroupName'
+      Path: !Ref 'GroupPath'
+
+  # The policy allowing access to CloudWatch. Will only be created if the user
+  # enabled the CloudWatch in the Parameters section. The policy will attach
+  # itself to either the Group or the Role depending on which ManagementMode
+  # was chosen.
+  IAMPolicyCloudWatch:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Condition: 'CreateCloudWatchPolicy'
+    Properties:
+      Description: 'Allow s3du access to S3 bucket metrics via CloudWatch'
+      Groups: !If
+        - 'AttachPolicyToUsers'
+        - - !Ref 'Group'
+        - []
+      ManagedPolicyName: 's3du-cloudwatch'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action:
+              - 'cloudwatch:GetMetricStatistics'
+              - 'cloudwatch:ListMetrics'
+            Resource:
+              - '*'
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                cloudwatch:namespace: 'AWS/S3'
+      Roles: !If
+        - 'CreateIAMRole'
+        - - !Ref 'Role'
+        - []
+
+  # The policy allowing access to S3. Will only be created if the user enabled
+  # the S3 policy in the Parameters section. The policy will attach itself to
+  # either the Group or the Role depending on which ManagementMode was chosen.
+  IAMPolicyS3:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Condition: 'CreateS3Policy'
+    Properties:
+      Description: 'Allow s3du access to S3 bucket metrics via S3'
+      Groups: !If
+        - 'AttachPolicyToUsers'
+        - - !Ref 'Group'
+        - []
+      ManagedPolicyName: 's3du-s3'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action:
+              - 's3:GetBucketLocation'
+              - 's3:ListAllMyBuckets'
+              - 's3:ListBucket'
+            Resource:
+              - '*'
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+      Roles: !If
+        - 'CreateIAMRole'
+        - - !Ref 'Role'
+        - []
+
+  # Attaches IAM users to the created IAM group if the Users ManagementMode was
+  # chosen.
+  UserGroupAttachment:
+    Type: 'AWS::IAM::UserToGroupAddition'
+    Condition: 'AttachPolicyToUsers'
+    Properties:
+      GroupName: !Ref 'Group'
+      Users: !Ref 'Users'
+
+# Outputs
+Outputs:
+  RoleARN:
+    Condition: 'CreateIAMRole'
+    Description: 'The ARN of the created role, required for role assumption'
+    Value: !GetAtt 'Role.Arn'
+    Export:
+      Name: !Sub '${AWS::StackName}-RoleARN'
