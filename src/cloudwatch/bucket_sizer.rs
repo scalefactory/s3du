@@ -8,18 +8,18 @@ use anyhow::{
 use async_trait::async_trait;
 use chrono::prelude::*;
 use chrono::Duration;
+use crate::common::{
+    BucketNames,
+    BucketSizer,
+};
 use log::debug;
 use rusoto_cloudwatch::{
     CloudWatch,
     Dimension,
     GetMetricStatisticsInput,
 };
-use crate::common::{
-    BucketNames,
-    BucketSizer,
-};
 
-use super::bucketmetrics::*;
+use super::bucket_metrics::*;
 use super::client::*;
 
 const S3_BUCKETSIZEBYTES: &str = "BucketSizeBytes";

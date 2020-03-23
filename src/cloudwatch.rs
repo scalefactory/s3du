@@ -2,8 +2,9 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-mod bucketmetrics;
-use bucketmetrics::*;
-mod bucketsizer;
+mod bucket_metrics;
+mod bucket_sizer;
 mod client;
+
+use bucket_metrics::*;
 pub use client::*;
