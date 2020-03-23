@@ -15,7 +15,6 @@ use crate::common::{
     S3ObjectVersions,
 };
 
-
 pub struct Client {
     pub client:          S3Client,
     pub buckets:         Option<BucketList>,

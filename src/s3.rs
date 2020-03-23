@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-mod bucketsizer;
-mod bucketlist;
+mod bucket_sizer;
+mod bucket_list;
 mod client;
 pub use client::*;
