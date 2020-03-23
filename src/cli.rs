@@ -139,10 +139,8 @@ pub fn parse_args<'a>() -> ArgMatches<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        FromStr,
-        Region,
-    };
+    use rusoto_core::Region;
+    use std::str::FromStr;
 
     #[test]
     fn test_is_valid_aws_region() {
