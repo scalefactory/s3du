@@ -31,6 +31,11 @@ impl BucketList {
     pub fn bucket_names(&self) -> &BucketNames {
         &self.0
     }
+
+    // Filter our bucket list to only the one listed, if any.
+    pub fn filter(&mut self, bucket: &str) {
+        self.0.retain(|b| b == bucket)
+    }
 }
 
 #[cfg(test)]

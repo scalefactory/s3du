@@ -17,10 +17,13 @@ use super::bucket_list::BucketList;
 
 pub struct Client {
     // client: The Rusoto S3Client
-    pub client:          S3Client,
+    pub client: S3Client,
+
+    // Selected bucket name, if any
+    pub bucket_name: Option<String>,
 
     // buckets: Cache of the BucketList
-    pub buckets:         Option<BucketList>,
+    pub buckets: Option<BucketList>,
 
     // object_versions: This tells us which objects to list in the bucket
     pub object_versions: S3ObjectVersions,
@@ -29,7 +32,8 @@ pub struct Client {
 impl Client {
     // Return a new CloudWatchClient in the specified region.
     pub fn new(config: ClientConfig) -> Self {
-        let region = config.region;
+        let bucket_name = config.bucket_name;
+        let region      = config.region;
 
         debug!(
             "new: Creating S3Client in region '{}'",
@@ -40,6 +44,7 @@ impl Client {
 
         Client {
             client:          client,
+            bucket_name:     bucket_name,
             buckets:         None,
             object_versions: config.s3_object_versions,
         }
@@ -199,6 +204,7 @@ mod tests {
 
         Client {
             client:          client,
+            bucket_name:     None,
             buckets:         None,
             object_versions: versions,
         }
