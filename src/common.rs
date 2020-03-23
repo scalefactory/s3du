@@ -5,10 +5,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::str::FromStr;
 
-mod clientconfig;
-pub use clientconfig::*;
-mod clientmode;
-pub use clientmode::*;
+mod client_config;
+pub use client_config::*;
+mod client_mode;
+pub use client_mode::*;
+mod s3_object_versions;
+pub use s3_object_versions::*;
 
 // These are used by the CloudWatch and S3 modes.
 pub type BucketNames = Vec<String>;
@@ -20,31 +22,6 @@ pub trait BucketSizer {
     async fn bucket_size(&self, bucket: &str) -> Result<usize>;
     // Returns a list of bucket names
     async fn list_buckets(&mut self) -> Result<BucketNames>;
-}
-
-#[cfg(feature = "s3")]
-#[derive(Debug)]
-pub enum S3ObjectVersions {
-    // Sum size of all object versions (both current and non-current)
-    All,
-    // Sum only size of current objects
-    Current,
-    // Sum only size of non-current objects
-    NonCurrent,
-}
-
-#[cfg(feature = "s3")]
-impl FromStr for S3ObjectVersions {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "all"         => Ok(Self::All),
-            "current"     => Ok(Self::Current),
-            "non-current" => Ok(Self::NonCurrent),
-            _             => Err("no match"),
-        }
-    }
 }
 
 #[derive(Debug)]
