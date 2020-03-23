@@ -18,74 +18,17 @@ use rusoto_cloudwatch::{
     ListMetricsInput,
     Metric,
 };
-use std::collections::HashMap;
-use super::common::{
+use crate::common::{
     BucketNames,
     BucketSizer,
 };
 
+mod bucketmetrics;
+use bucketmetrics::*;
+
 const S3_BUCKETSIZEBYTES: &str = "BucketSizeBytes";
 const S3_NAMESPACE: &str = "AWS/S3";
 
-type StorageTypes = Vec<String>;
-
-// This Hash is keyed by bucket name and contains a list of storage types that
-// are used within the bucket.
-#[derive(Debug, PartialEq)]
-struct BucketMetrics(HashMap<String, StorageTypes>);
-
-impl BucketMetrics {
-    // Return the bucket names from the BucketMetrics
-    fn bucket_names(&self) -> BucketNames {
-        debug!(
-            "BucketMetrics::bucket_names: Returning names from: {:#?}",
-            self.0,
-        );
-
-        self.0.iter().map(|(k, _v)| k.to_string()).collect()
-    }
-
-    // Return storage types of a given bucket
-    fn storage_types(&self, bucket: &str) -> &StorageTypes {
-        self.0.get(bucket).unwrap()
-    }
-}
-
-// Conversion from a Vec<Metric> as returned by AWS to our BucketMetrics
-impl From<Vec<Metric>> for BucketMetrics {
-    fn from(metrics: Vec<Metric>) -> Self {
-        let mut bucket_metrics = HashMap::new();
-
-        for metric in metrics {
-            // Get the dimensions if any, otherwise skip to next iteration
-            let dimensions = match metric.dimensions {
-                Some(d) => d,
-                None    => continue,
-            };
-
-            // Storage for what we'll pull out of the dimensions
-            let mut name = String::new();
-            let mut storage_types = vec![];
-
-            // Process the dimensions, taking the bucket name and storage types
-            for dimension in dimensions {
-                match dimension.name.as_ref() {
-                    "BucketName"  => name = dimension.value,
-                    "StorageType" => storage_types.push(dimension.value),
-                    _             => {},
-                }
-            }
-
-            // Set the storage types for this bucket
-            bucket_metrics.insert(name, storage_types);
-        }
-
-        BucketMetrics(bucket_metrics)
-    }
-}
-
-// A RefCell is used to keep the external API immutable while we can change
-// metrics internally.
 pub struct Client {
     client:  CloudWatchClient,
     metrics: Option<BucketMetrics>,
@@ -285,6 +228,7 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
+    use std::collections::HashMap;
     use tokio::runtime::Runtime;
 
     // Possibly helpful while debugging tests.
