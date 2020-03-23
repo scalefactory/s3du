@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use crate::s3::bucketlist::BucketList;
+use crate::s3::bucket_list::BucketList;
 use log::debug;
 use rusoto_s3::{
     ListObjectsV2Request,
