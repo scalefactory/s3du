@@ -42,9 +42,15 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
 
     match mode {
         #[cfg(feature = "cloudwatch")]
-        ClientMode::CloudWatch => Box::new(cloudwatch::Client::new(config.region)),
+        ClientMode::CloudWatch => {
+            let client = cloudwatch::Client::new(config.region);
+            Box::new(client)
+        },
         #[cfg(feature = "s3")]
-        ClientMode::S3         => Box::new(s3::Client::new(config)),
+        ClientMode::S3 => {
+            let client = s3::Client::new(config);
+            Box::new(client)
+        },
     }
 }
 
