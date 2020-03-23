@@ -18,8 +18,14 @@ pub struct ClientConfig {
 
 impl Default for ClientConfig {
     fn default() -> Self {
+        #[cfg(feature = "cloudwatch")]
+        let mode = ClientMode::CloudWatch;
+
+        #[cfg(all(feature = "s3", not(feature = "cloudwatch")))]
+        let mode = ClientMode::S3;
+
         Self {
-            mode:   ClientMode::CloudWatch,
+            mode:   mode,
             region: Region::UsEast1,
             #[cfg(feature = "s3")]
             s3_object_versions: S3ObjectVersions::Current,

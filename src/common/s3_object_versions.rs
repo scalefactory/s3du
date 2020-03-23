@@ -4,7 +4,6 @@
 use anyhow::Result;
 use std::str::FromStr;
 
-#[cfg(feature = "s3")]
 #[derive(Debug)]
 pub enum S3ObjectVersions {
     // Sum size of all object versions (both current and non-current)
@@ -15,7 +14,6 @@ pub enum S3ObjectVersions {
     NonCurrent,
 }
 
-#[cfg(feature = "s3")]
 impl FromStr for S3ObjectVersions {
     type Err = &'static str;
 
