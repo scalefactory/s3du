@@ -6,6 +6,9 @@ use async_trait::async_trait;
 use rusoto_core::Region;
 use std::str::FromStr;
 
+mod clientmode;
+pub use clientmode::*;
+
 // These are used by the CloudWatch and S3 modes.
 pub type BucketNames = Vec<String>;
 
@@ -59,31 +62,6 @@ impl Default for ClientConfig {
             region: Region::UsEast1,
             #[cfg(feature = "s3")]
             s3_object_versions: S3ObjectVersions::Current,
-        }
-    }
-}
-
-// Valid modes that s3du can operate in.
-#[derive(Debug, Eq, PartialEq)]
-pub enum ClientMode {
-    #[cfg(feature = "cloudwatch")]
-    CloudWatch,
-    #[cfg(feature = "s3")]
-    S3,
-}
-
-// This is used to work out which mode we're in after parsing the CLI.
-// We shouldn't ever hit the error condition here.
-impl FromStr for ClientMode {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            #[cfg(feature = "cloudwatch")]
-            "cloudwatch" => Ok(Self::CloudWatch),
-            #[cfg(feature = "s3")]
-            "s3"         => Ok(Self::S3),
-            _            => Err("no match"),
         }
     }
 }
