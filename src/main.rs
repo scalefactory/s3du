@@ -43,7 +43,7 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
     match mode {
         #[cfg(feature = "cloudwatch")]
         ClientMode::CloudWatch => {
-            let client = cloudwatch::Client::new(config.region);
+            let client = cloudwatch::Client::new(config);
             Box::new(client)
         },
         #[cfg(feature = "s3")]
@@ -88,6 +88,12 @@ fn main() -> Result<()> {
     // Parse the CLI
     let matches = cli::parse_args();
 
+    // Get the bucket name, if any.
+    let bucket_name = match matches.value_of("BUCKET") {
+        Some(name) => Some(name.to_string()),
+        None       => None,
+    };
+
     // Get the client mode
     let mode = value_t!(matches, "MODE", ClientMode)?;
 
@@ -100,8 +106,9 @@ fn main() -> Result<()> {
     let region = Region::from_str(region)?;
 
     let mut config = ClientConfig {
-        mode:   mode,
-        region: region,
+        bucket_name: bucket_name,
+        mode:        mode,
+        region:      region,
         ..Default::default()
     };
 

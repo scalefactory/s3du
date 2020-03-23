@@ -170,8 +170,9 @@ mod tests {
         );
 
         Client {
-            client:  client,
-            metrics: metrics,
+            client:      client,
+            bucket_name: None,
+            metrics:     metrics,
         }
     }
 

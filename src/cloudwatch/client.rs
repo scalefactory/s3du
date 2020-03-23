@@ -3,11 +3,12 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use chrono::prelude::*;
+use crate::common::ClientConfig;
 use log::debug;
-use rusoto_core::Region;
 use rusoto_cloudwatch::{
     CloudWatch,
     CloudWatchClient,
+    DimensionFilter,
     ListMetricsInput,
     Metric,
 };
@@ -17,13 +18,19 @@ pub struct Client {
     // client: The Rusoto CloudWatchClient
     pub client:  CloudWatchClient,
 
+    // Bucket name that was selected.
+    pub bucket_name: Option<String>,
+
     // metrics: A cache of BucketMetrics returned by AWS
     pub metrics: Option<BucketMetrics>,
 }
 
 impl Client {
     // Return a new CloudWatchClient in the specified region.
-    pub fn new(region: Region) -> Self {
+    pub fn new(config: ClientConfig) -> Self {
+        let bucket_name = config.bucket_name;
+        let region      = config.region;
+
         debug!(
             "new: Creating CloudWatchClient in region '{}'",
             region.name(),
@@ -32,8 +39,9 @@ impl Client {
         let client = CloudWatchClient::new(region);
 
         Client {
-            client:  client,
-            metrics: None,
+            client:      client,
+            bucket_name: bucket_name,
+            metrics:     None,
         }
     }
 
@@ -65,10 +73,24 @@ impl Client {
         let mut metrics    = vec![];
         let mut next_token = None;
 
+        // If we selected a bucket to list, filter for it here.
+        let dimensions = match self.bucket_name.as_ref() {
+            Some(bucket_name) => {
+                let filter = DimensionFilter {
+                    name: "BucketName".into(),
+                    value: Some(bucket_name.to_owned()),
+                };
+
+                Some(vec![filter])
+            },
+            None => None,
+        };
+
         // We loop until we've processed everything.
         loop {
             // Input for CloudWatch API
             let list_metrics_input = ListMetricsInput {
+                dimensions:  dimensions.clone(),
                 metric_name: Some("BucketSizeBytes".into()),
                 namespace:   Some("AWS/S3".into()),
                 next_token:  next_token,
@@ -132,8 +154,9 @@ mod tests {
         );
 
         Client {
-            client:  client,
-            metrics: metrics,
+            client:      client,
+            bucket_name: None,
+            metrics:     metrics,
         }
     }
 

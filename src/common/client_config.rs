@@ -10,8 +10,9 @@ use super::S3ObjectVersions;
 // Client configuration
 #[derive(Debug)]
 pub struct ClientConfig {
-    pub mode:   ClientMode,
-    pub region: Region,
+    pub bucket_name: Option<String>,
+    pub mode:        ClientMode,
+    pub region:      Region,
     #[cfg(feature = "s3")]
     pub s3_object_versions: S3ObjectVersions,
 }
@@ -25,8 +26,9 @@ impl Default for ClientConfig {
         let mode = ClientMode::S3;
 
         Self {
-            mode:   mode,
-            region: Region::UsEast1,
+            bucket_name: None,
+            mode:        mode,
+            region:      Region::UsEast1,
             #[cfg(feature = "s3")]
             s3_object_versions: S3ObjectVersions::Current,
         }
