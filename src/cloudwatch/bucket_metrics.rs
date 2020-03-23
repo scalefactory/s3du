@@ -43,20 +43,26 @@ impl From<Vec<Metric>> for BucketMetrics {
             };
 
             // Storage for what we'll pull out of the dimensions
-            let mut name = String::new();
-            let mut storage_types = vec![];
+            let mut name          = String::new();
+            let mut storage_type  = String::new();
 
             // Process the dimensions, taking the bucket name and storage types
             for dimension in dimensions {
                 match dimension.name.as_ref() {
-                    "BucketName"  => name = dimension.value,
-                    "StorageType" => storage_types.push(dimension.value),
+                    "BucketName"  => name         = dimension.value,
+                    "StorageType" => storage_type = dimension.value,
                     _             => {},
                 }
             }
 
-            // Set the storage types for this bucket
-            bucket_metrics.insert(name, storage_types);
+            // Get the existing StorageTypes entry for the bucket, or create a
+            // new one if it doesn't exist yet.
+            let storage_types = bucket_metrics
+                .entry(name)
+                .or_insert(StorageTypes::new());
+
+            // Push the new storage type into the vec
+            storage_types.push(storage_type);
         }
 
         BucketMetrics(bucket_metrics)
@@ -80,16 +86,26 @@ mod tests {
                 namespace:   Some("AWS/S3".into()),
                 dimensions:  Some(vec![
                     Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
                         name:  "BucketName".into(),
                         value: "some-bucket-name".into(),
                     },
                     Dimension {
                         name:  "StorageType".into(),
                         value: "StandardIAStorage".into(),
+                    },
+                ]),
+            },
+            Metric {
+                metric_name: Some("BucketSizeBytes".into()),
+                namespace:   Some("AWS/S3".into()),
+                dimensions:  Some(vec![
+                    Dimension {
+                        name:  "StorageType".into(),
+                        value: "StandardStorage".into(),
+                    },
+                    Dimension {
+                        name:  "BucketName".into(),
+                        value: "some-bucket-name".into(),
                     },
                 ]),
             },
@@ -119,8 +135,8 @@ mod tests {
 
         let mut expected = HashMap::new();
         expected.insert("some-bucket-name".into(), vec![
-            "StandardStorage".into(),
             "StandardIAStorage".into(),
+            "StandardStorage".into(),
         ]);
         expected.insert("some-other-bucket-name".into(), vec![
             "StandardStorage".into(),
