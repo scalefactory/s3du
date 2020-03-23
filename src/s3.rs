@@ -203,6 +203,7 @@ mod tests {
     };
     use rusoto_s3::{
         Bucket,
+        ListBucketsOutput,
         Owner,
     };
     use tokio::runtime::Runtime;
