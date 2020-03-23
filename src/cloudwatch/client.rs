@@ -103,7 +103,6 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::BucketSizer;
     use pretty_assertions::assert_eq;
     use rusoto_cloudwatch::{
         Dimension,
@@ -142,11 +141,71 @@ mod tests {
 
     #[test]
     fn test_iso8601() {
-        let dt = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
+        let dt       = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
         let expected = "2020-03-01T00:16:27Z";
 
         let client = mock_client(None, None);
-        let ret = Client::iso8601(&client, dt);
+        let ret    = Client::iso8601(&client, dt);
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_list_metrics() {
+        let mut client = mock_client(
+            Some("cloudwatch-list-metrics.xml"),
+            None,
+        );
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::list_metrics(&mut client))
+            .unwrap();
+
+        let expected = vec![
+            Metric {
+                metric_name: Some("BucketSizeBytes".into()),
+                namespace:   Some("AWS/S3".into()),
+                dimensions:  Some(vec![
+                    Dimension {
+                        name:  "BucketName".into(),
+                        value: "a-bucket-name".into(),
+                    },
+                    Dimension {
+                        name:  "StorageType".into(),
+                        value: "StandardStorage".into(),
+                    },
+                ]),
+            },
+            Metric {
+                metric_name: Some("BucketSizeBytes".into()),
+                namespace:   Some("AWS/S3".into()),
+                dimensions:  Some(vec![
+                    Dimension {
+                        name:  "BucketName".into(),
+                        value: "a-bucket-name".into(),
+                    },
+                    Dimension {
+                        name:  "StorageType".into(),
+                        value: "StandardIAStorage".into(),
+                    },
+                ]),
+            },
+            Metric {
+                metric_name: Some("BucketSizeBytes".into()),
+                namespace:   Some("AWS/S3".into()),
+                dimensions:  Some(vec![
+                    Dimension {
+                        name: "BucketName".into(),
+                        value: "another-bucket-name".into(),
+                    },
+                    Dimension {
+                        name: "StorageType".into(),
+                        value: "StandardStorage".into(),
+                    },
+                ]),
+            },
+        ];
 
         assert_eq!(ret, expected);
     }
