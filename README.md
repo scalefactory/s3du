@@ -78,8 +78,7 @@ wish to use.
 ### CloudWatch IAM Policy
 
 This policy will enforce HTTPS use and will allow `s3du` access to the AWS
-CloudWatch `GetMetricStatistics` and `ListMetrics` APIs. CloudWatch use will
-be restricted to the `AWS/S3` namespace.
+CloudWatch `GetMetricStatistics` and `ListMetrics` APIs.
 
 ```json
 {
@@ -98,9 +97,6 @@ be restricted to the `AWS/S3` namespace.
             "Condition": {
                 "Bool": {
                     "aws:SecureTransport": true
-                },
-                "StringEquals": {
-                    "cloudwatch:namespace": "AWS/S3"
                 }
             }
         }

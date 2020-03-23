@@ -162,8 +162,6 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: true
-              StringEquals:
-                cloudwatch:namespace: 'AWS/S3'
       Roles: !If
         - 'CreateIAMRole'
         - - !Ref 'Role'
