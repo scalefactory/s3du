@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use crate::s3::bucketlist::BucketList;
 use log::debug;
 use rusoto_s3::{
     ListObjectsV2Request,
@@ -14,8 +15,6 @@ use crate::common::{
     S3ObjectVersions,
 };
 
-use super::bucketlist::*;
-use super::BucketSizer;
 
 pub struct Client {
     pub client:          S3Client,
@@ -168,18 +167,7 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
-    use rusoto_s3::{
-        Bucket,
-        ListBucketsOutput,
-        Owner,
-    };
     use tokio::runtime::Runtime;
-
-    // Possibly helpful while debugging tests.
-    fn init() {
-        // Try init because we can only init the logger once.
-        let _ = pretty_env_logger::try_init();
-    }
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
@@ -206,86 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn test_bucketlist_from() {
-        let buckets = vec![
-            Bucket {
-                creation_date: Some("2020-03-12T14:45:00.000Z".into()),
-                name:          Some("a-bucket".into()),
-            },
-            Bucket {
-                creation_date: Some("2020-03-11T14:45:00.000Z".into()),
-                name:          Some("another-bucket".into()),
-            },
-        ];
-
-        let owner = Owner {
-            display_name: Some("aws".into()),
-            id:           Some("1936a5d8a2b189cda450d1d1d514f3861b3adc2df515".into()),
-        };
-
-        let output = ListBucketsOutput {
-            buckets: Some(buckets),
-            owner:   Some(owner),
-        };
-
-        let bucket_list: BucketList = output.into();
-        let mut bucket_names = bucket_list.bucket_names().to_owned();
-        bucket_names.sort();
-
-        let expected = vec![
-            "a-bucket",
-            "another-bucket",
-        ];
-
-        assert_eq!(bucket_names, expected);
-    }
-
-    #[test]
-    fn test_list_buckets() {
-        init();
-
-        let expected = vec![
-            "a-bucket-name",
-            "another-bucket-name",
-        ];
-
-        let mut client = mock_client(
-            Some("s3-list-buckets.xml"),
-            S3ObjectVersions::Current,
-        );
-        let mut ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::list_buckets(&mut client))
-            .unwrap();
-        ret.sort();
-
-        assert_eq!(ret, expected);
-    }
-
-    #[test]
-    fn test_bucket_size() {
-        init();
-
-        let client = mock_client(
-            Some("s3-list-objects.xml"),
-            S3ObjectVersions::Current,
-        );
-
-        let bucket = "test-bucket";
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::bucket_size(&client, bucket))
-            .unwrap();
-
-        let expected = 33792;
-
-        assert_eq!(ret, expected);
-    }
-
-    #[test]
     fn test_size_objects_current() {
-        init();
-
         let mut client = mock_client(
             Some("s3-list-objects.xml"),
             S3ObjectVersions::Current,
@@ -303,8 +212,6 @@ mod tests {
 
     #[test]
     fn test_size_objects_all_noncurrent() {
-        init();
-
         // Current expects 0 here because our mock client won't return any
         // objects. This is handled in another test.
         let tests = vec![
