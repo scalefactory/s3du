@@ -111,7 +111,7 @@ impl BucketSizer for Client {
 
             // We only use 24h of data, so there should only ever be one
             // datapoint.
-            if datapoints.len() < 1 {
+            if datapoints.is_empty() {
                 return Err(
                     anyhow!("Failed to fetch any CloudWatch datapoints!")
                 );

@@ -59,7 +59,7 @@ impl From<Vec<Metric>> for BucketMetrics {
             // new one if it doesn't exist yet.
             let storage_types = bucket_metrics
                 .entry(name)
-                .or_insert(StorageTypes::new());
+                .or_insert_with(|| StorageTypes::new());
 
             // Push the new storage type into the vec
             storage_types.push(storage_type);

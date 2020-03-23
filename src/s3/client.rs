@@ -70,15 +70,19 @@ impl Client {
                         match self.object_versions {
                             S3ObjectVersions::All     => v.size,
                             S3ObjectVersions::Current => {
-                                match is_latest {
-                                    true  => v.size,
-                                    false => None,
+                                if is_latest {
+                                    v.size
+                                }
+                                else {
+                                    None
                                 }
                             },
                             S3ObjectVersions::NonCurrent => {
-                                match is_latest {
-                                    true  => None,
-                                    false => v.size,
+                                if is_latest {
+                                    None
+                                }
+                                else {
+                                    v.size
                                 }
                             },
                         }
