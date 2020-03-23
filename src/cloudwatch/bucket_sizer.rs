@@ -1,4 +1,4 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Implements the BucketSizer trait for CloudWatch Client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::{
@@ -18,16 +18,14 @@ use rusoto_cloudwatch::{
     Dimension,
     GetMetricStatisticsInput,
 };
-
-use super::bucket_metrics::*;
-use super::client::*;
-
-const S3_BUCKETSIZEBYTES: &str = "BucketSizeBytes";
-const S3_NAMESPACE: &str = "AWS/S3";
+use super::bucket_metrics::BucketMetrics;
+use super::client::Client;
 
 #[async_trait]
 impl BucketSizer for Client {
     // Return a list of S3 bucket names from CloudWatch.
+    // We also cache the returned metrics here, since we need to reference this
+    // elsewhere, and we don't want to have to query for it again.
     async fn list_buckets(&mut self) -> Result<BucketNames> {
         let metrics: BucketMetrics = self.list_metrics().await?.into();
         let bucket_names           = metrics.bucket_names();
@@ -58,7 +56,7 @@ impl BucketSizer for Client {
 
         // Get the time now so we can select the last 24 hours of metrics.
         let now: DateTime<Utc> = Utc::now();
-        let one_day = Duration::days(1);
+        let one_day            = Duration::days(1);
 
         // Create queries for each bucket storage type.
         let iter = storage_types.iter();
@@ -76,13 +74,13 @@ impl BucketSizer for Client {
             ];
 
             // Actual query
-            // We look back two days since sometimes CloudWatch doesn't have
-            // the previous 24h for us yet.
+            // We look back two days (start_time) since sometimes CloudWatch
+            // doesn't have the previous 24h for us yet.
             GetMetricStatisticsInput {
                 dimensions:  Some(dimensions),
                 end_time:    self.iso8601(now),
-                metric_name: S3_BUCKETSIZEBYTES.into(),
-                namespace:   S3_NAMESPACE.into(),
+                metric_name: "BucketSizeBytes".into(),
+                namespace:   "AWS/S3".into(),
                 period:      one_day.num_seconds(),
                 start_time:  self.iso8601(now - (one_day * 2)),
                 statistics:  Some(vec!["Average".into()]),

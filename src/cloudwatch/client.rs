@@ -1,4 +1,4 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Implement the CloudWatch Client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
@@ -13,11 +13,11 @@ use rusoto_cloudwatch::{
 };
 use super::bucket_metrics::BucketMetrics;
 
-const S3_BUCKETSIZEBYTES: &str = "BucketSizeBytes";
-const S3_NAMESPACE: &str = "AWS/S3";
-
 pub struct Client {
+    // client: The Rusoto CloudWatchClient
     pub client:  CloudWatchClient,
+
+    // metrics: A cache of BucketMetrics returned by AWS
     pub metrics: Option<BucketMetrics>,
 }
 
@@ -62,8 +62,6 @@ impl Client {
     pub async fn list_metrics(&self) -> Result<Vec<Metric>> {
         debug!("list_metrics: Listing...");
 
-        let metric_name    = S3_BUCKETSIZEBYTES.to_string();
-        let namespace      = S3_NAMESPACE.to_string();
         let mut metrics    = vec![];
         let mut next_token = None;
 
@@ -71,8 +69,8 @@ impl Client {
         loop {
             // Input for CloudWatch API
             let list_metrics_input = ListMetricsInput {
-                metric_name: Some(metric_name.clone()),
-                namespace:   Some(namespace.clone()),
+                metric_name: Some("BucketSizeBytes".into()),
+                namespace:   Some("AWS/S3".into()),
                 next_token:  next_token,
                 ..Default::default()
             };

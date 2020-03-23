@@ -1,4 +1,4 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Handles the CloudWatch bucket metrics
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use crate::common::BucketNames;
@@ -6,6 +6,7 @@ use log::debug;
 use rusoto_cloudwatch::Metric;
 use std::collections::HashMap;
 
+// Convenience type for our returned storage types
 type StorageTypes = Vec<String>;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
@@ -21,12 +22,17 @@ impl BucketMetrics {
             self.0,
         );
 
-        self.0.iter().map(|(k, _v)| k.to_string()).collect()
+        self.0
+            .iter()
+            .map(|(k, _v)| k.to_string())
+            .collect()
     }
 
     // Return storage types of a given bucket
     pub fn storage_types(&self, bucket: &str) -> &StorageTypes {
-        self.0.get(bucket).unwrap()
+        self.0
+            .get(bucket)
+            .unwrap()
     }
 }
 

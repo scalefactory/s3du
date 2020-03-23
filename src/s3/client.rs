@@ -1,4 +1,4 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Implements the S3 Client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
@@ -16,8 +16,13 @@ use rusoto_s3::{
 use super::bucket_list::BucketList;
 
 pub struct Client {
+    // client: The Rusoto S3Client
     pub client:          S3Client,
+
+    // buckets: Cache of the BucketList
     pub buckets:         Option<BucketList>,
+
+    // object_versions: This tells us which objects to list in the bucket
     pub object_versions: S3ObjectVersions,
 }
 
@@ -46,6 +51,7 @@ impl Client {
         let mut next_version_id_marker = None;
         let mut size                   = 0;
 
+        // Loop until all object versions are processed
         loop {
             let input = ListObjectVersionsRequest {
                 bucket:            bucket.into(),
@@ -90,6 +96,8 @@ impl Client {
                     .sum::<i64>() as usize;
             }
 
+            // Check if we need to continue processing bucket output and store
+            // the continuation tokens for the next loop if so.
             match output.is_truncated {
                 Some(true) => {
                     let nkm  = output.next_key_marker;

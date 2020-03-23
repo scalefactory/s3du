@@ -1,11 +1,12 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Easily hadnle converting from a ListBucketsOutput into our own BucketList
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use rusoto_s3::ListBucketsOutput;
 use crate::common::BucketNames;
+use rusoto_s3::ListBucketsOutput;
 
 pub struct BucketList(Vec<String>);
 
+// Implement a conversion From ListBucketsOutput to BucketList
 impl From<ListBucketsOutput> for BucketList {
     fn from(output: ListBucketsOutput) -> Self {
         let mut bucket_names = vec![];
@@ -26,6 +27,7 @@ impl From<ListBucketsOutput> for BucketList {
 }
 
 impl BucketList {
+    // Return a reference to a vec of bucket names
     pub fn bucket_names(&self) -> &BucketNames {
         &self.0
     }

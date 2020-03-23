@@ -1,4 +1,4 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Implement the BucketSizer trait for the s3::Client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
@@ -15,6 +15,8 @@ use super::client::Client;
 #[async_trait]
 impl BucketSizer for Client {
     // Return a list of S3 bucket names from CloudWatch.
+    // We also cache a list of buckets here, so we don't have to query it again
+    // later.
     async fn list_buckets(&mut self) -> Result<BucketNames> {
         let bucket_list: BucketList = self.client.list_buckets().await?.into();
         let bucket_names            = bucket_list.bucket_names().to_owned();

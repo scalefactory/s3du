@@ -1,4 +1,4 @@
-// s3du: A tool for informing you of the used space in AWS S3.
+// Imports all of the components needed for s3::client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
