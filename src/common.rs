@@ -3,9 +3,10 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use async_trait::async_trait;
-use rusoto_core::Region;
 use std::str::FromStr;
 
+mod clientconfig;
+pub use clientconfig::*;
 mod clientmode;
 pub use clientmode::*;
 
@@ -42,26 +43,6 @@ impl FromStr for S3ObjectVersions {
             "current"     => Ok(Self::Current),
             "non-current" => Ok(Self::NonCurrent),
             _             => Err("no match"),
-        }
-    }
-}
-
-// Client configuration
-#[derive(Debug)]
-pub struct ClientConfig {
-    pub mode:   ClientMode,
-    pub region: Region,
-    #[cfg(feature = "s3")]
-    pub s3_object_versions: S3ObjectVersions,
-}
-
-impl Default for ClientConfig {
-    fn default() -> Self {
-        Self {
-            mode:   ClientMode::CloudWatch,
-            region: Region::UsEast1,
-            #[cfg(feature = "s3")]
-            s3_object_versions: S3ObjectVersions::Current,
         }
     }
 }
