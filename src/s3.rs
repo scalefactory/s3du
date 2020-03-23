@@ -7,7 +7,6 @@ use anyhow::{
 use async_trait::async_trait;
 use log::debug;
 use rusoto_s3::{
-    ListBucketsOutput,
     ListObjectsV2Request,
     ListObjectVersionsRequest,
     S3,
@@ -20,35 +19,9 @@ use super::common::{
     S3ObjectVersions,
 };
 
-struct BucketList(Vec<String>);
+mod bucketlist;
+use bucketlist::*;
 
-impl From<ListBucketsOutput> for BucketList {
-    fn from(output: ListBucketsOutput) -> Self {
-        let mut bucket_names = vec![];
-
-        let buckets = match output.buckets {
-            Some(buckets) => buckets,
-            None          => vec![],
-        };
-
-        for bucket in buckets {
-            if let Some(name) = bucket.name {
-                bucket_names.push(name);
-            }
-        }
-
-        BucketList(bucket_names)
-    }
-}
-
-impl BucketList {
-    fn bucket_names(&self) -> &BucketNames {
-        &self.0
-    }
-}
-
-// A RefCell is used to keep the external API immutable while we can change
-// metrics internally.
 pub struct Client {
     client:          S3Client,
     buckets:         Option<BucketList>,
