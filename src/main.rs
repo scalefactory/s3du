@@ -69,7 +69,7 @@ async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
         let size = client.bucket_size(&bucket).await?;
         let size = humansize(size, &unit);
 
-        println!("{}: {}", bucket, size);
+        println!("{size}\t{bucket}", size=size, bucket=bucket);
     }
 
     Ok(())
