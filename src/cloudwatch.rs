@@ -6,5 +6,4 @@ mod bucket_metrics;
 mod bucket_sizer;
 mod client;
 
-use bucket_metrics::*;
 pub use client::*;

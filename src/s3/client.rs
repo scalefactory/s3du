@@ -2,7 +2,10 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use crate::s3::bucket_list::BucketList;
+use crate::common::{
+    ClientConfig,
+    S3ObjectVersions,
+};
 use log::debug;
 use rusoto_s3::{
     ListObjectsV2Request,
@@ -10,10 +13,7 @@ use rusoto_s3::{
     S3,
     S3Client,
 };
-use crate::common::{
-    ClientConfig,
-    S3ObjectVersions,
-};
+use super::bucket_list::BucketList;
 
 pub struct Client {
     pub client:          S3Client,

@@ -7,10 +7,10 @@ use crate::common::{
     BucketNames,
     BucketSizer,
 };
-use crate::s3::bucket_list::BucketList;
-use crate::s3::client::Client;
 use log::debug;
 use rusoto_s3::S3;
+use super::bucket_list::BucketList;
+use super::client::Client;
 
 #[async_trait]
 impl BucketSizer for Client {

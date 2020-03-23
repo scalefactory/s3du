@@ -11,7 +11,7 @@ use rusoto_cloudwatch::{
     ListMetricsInput,
     Metric,
 };
-use super::BucketMetrics;
+use super::bucket_metrics::BucketMetrics;
 
 const S3_BUCKETSIZEBYTES: &str = "BucketSizeBytes";
 const S3_NAMESPACE: &str = "AWS/S3";
