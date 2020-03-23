@@ -76,13 +76,15 @@ impl BucketSizer for Client {
             ];
 
             // Actual query
+            // We look back two days since sometimes CloudWatch doesn't have
+            // the previous 24h for us yet.
             GetMetricStatisticsInput {
                 dimensions:  Some(dimensions),
                 end_time:    self.iso8601(now),
                 metric_name: S3_BUCKETSIZEBYTES.into(),
                 namespace:   S3_NAMESPACE.into(),
                 period:      one_day.num_seconds(),
-                start_time:  self.iso8601(now - one_day),
+                start_time:  self.iso8601(now - (one_day * 2)),
                 statistics:  Some(vec!["Average".into()]),
                 unit:        Some("Bytes".into()),
                 ..Default::default()
@@ -109,6 +111,12 @@ impl BucketSizer for Client {
 
             // We only use 24h of data, so there should only ever be one
             // datapoint.
+            if datapoints.len() < 1 {
+                return Err(
+                    anyhow!("Failed to fetch any CloudWatch datapoints!")
+                );
+            }
+
             let datapoint = &datapoints[0];
 
             // BucketSizeBytes only supports Average, so this should be safe

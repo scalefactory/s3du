@@ -4,7 +4,6 @@
 
 mod bucketmetrics;
 use bucketmetrics::*;
+mod bucketsizer;
 mod client;
 pub use client::*;
-mod bucketsizer;
-use bucketsizer::*;
