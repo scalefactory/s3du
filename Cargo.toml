@@ -3,7 +3,7 @@ name = "s3du"
 version = "0.1.0"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
-license = "MIT"
+license = "MIT/Apache-2.0"
 
 [features]
 # Build with both CloudWatch and S3 support by default
