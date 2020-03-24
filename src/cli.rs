@@ -32,7 +32,7 @@ const DEFAULT_MODE: &str = "s3";
 const DEFAULT_OBJECT_VERSIONS: &str = "current";
 
 // Default AWS region if one isn't provided on the command line
-const DEFAULT_REGION: &str = "eu-west-1";
+const DEFAULT_REGION: &str = "us-east-1";
 
 // Default unit to display sizes in
 const DEFAULT_UNIT: &str = "binary";
