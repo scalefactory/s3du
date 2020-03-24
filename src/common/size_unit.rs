@@ -11,12 +11,12 @@ use std::str::FromStr;
 // We remove the space from the humansize output so that our own output is
 // sortable by `sort -h`.
 const SIZE_UNIT_BINARY: FileSizeOpts = FileSizeOpts {
-    space:      false,
+    space: false,
     ..file_size_opts::BINARY
 };
 
 const SIZE_UNIT_DECIMAL: FileSizeOpts = FileSizeOpts {
-    space:      false,
+    space: false,
     ..file_size_opts::DECIMAL
 };
 
