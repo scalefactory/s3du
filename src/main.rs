@@ -4,10 +4,7 @@
 #![allow(clippy::redundant_field_names)]
 use anyhow::Result;
 use clap::value_t;
-use humansize::{
-    file_size_opts,
-    FileSize,
-};
+use humansize::FileSize;
 use log::{
     debug,
     info,
@@ -57,9 +54,9 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
 // Return a filesize as a human readable size, if that was requested
 fn humansize(size: usize, unit: &SizeUnit) -> String {
     match unit {
-        SizeUnit::Binary  => size.file_size(file_size_opts::BINARY).unwrap(),
-        SizeUnit::Bytes   => size.to_string(),
-        SizeUnit::Decimal => size.file_size(file_size_opts::DECIMAL).unwrap(),
+        SizeUnit::Binary(unit)  => size.file_size(unit).unwrap(),
+        SizeUnit::Bytes         => size.to_string(),
+        SizeUnit::Decimal(unit) => size.file_size(unit).unwrap(),
     }
 }
 
