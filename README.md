@@ -141,10 +141,8 @@ pricing model which may also vary by region.
 
 ### CloudWatch
 
-AWS CloudWatch is almost certain to be the cheapest method of running `s3du`.
-At the time of writing this `README`, the AWS CloudWatch free tier includes
-1 million API calls per month, with costs after that being $0.01 per 1,000
-API requests.
+AWS CloudWatch is the cheapest method of running `s3du`, at the cost of some
+accuracy.
 
 The CloudWatch mode of `s3du` will use at least 1 API call to perform the
 `ListMetrics` call and at least 1 API call per S3 bucket for the
@@ -158,6 +156,54 @@ paginate after 1,440 statistics.
 As a basic example, getting bucket sizes for an AWS account with 4 S3 buckets
 in it should use 5 API calls total. 1 `ListMetrics` call to discover the
 buckets and 4 `GetMetricStatistics` calls (one for each bucket).
+
+### S3
+
+AWS S3 is a more expensive, but more accurate, method of listing bucket sizes.
+
+The S3 mode of `s3du` will use 1 API call to perform the `ListBuckets` API
+call, and at least 1 call to either `ListObjectsV2` or `ListObjectVersions` per
+bucket.
+
+The `ListObjectsV2` and `ListObjectVersions` API calls will each return 1,000
+objects maximum, if your bucket has more objects than this, pagination will be
+required.
+
+For example, let's say we're running in S3 mode getting the sizes of current
+object versions and our AWS account has 2 buckets.
+`bucket-a` (no versioning enabled) has 10,000 objects and `bucket-b`
+(versioning enabled) has 32,768 object versions of which 13,720 are current
+versions and 19,048 are non-current versions. This would mean:
+
+  - 1 API call to `ListBuckets` for bucket discovery
+  - 10 API calls to `ListObjectsV2` for `bucket-a`
+  - 14 API calls to `ListObjectsV2` for `bucket-b`
+
+for a total of 25 API calls.
+
+If we were to run `s3du` against the same account a second time, but ask for
+the sum of all object versions, we'd get the following:
+
+  - 1 API call to `ListBuckets` for bucket discovery
+  - 10 API calls to `ListObjectVersions` for `bucket-a`
+  - 33 API calls to `ListObjectVersions` for `bucket-b`
+
+for a total of 44 API calls.
+
+A third run of `s3du` against the same account but asking for the sum of
+non-current object versions would result in the following:
+
+  - 1 API call to `ListBuckets` for bucket discovery
+  - 1 API calls to `ListObjectVersions` for `bucket-a`
+  - 33 API calls to `ListObjectVersions` for `bucket-b`
+
+for a total of 35 API calls.
+
+You will notice that the number of API calls for `bucket-b` are the same across
+both the "all" and "non-current" object versions requests, this is because any
+filtering for current vs. non-current objects in these scenarios must be done
+by `s3du`. The `ListObjectVersions` API does not let us specify which object
+versions we'd like to retrieve.
 
 <!-- links -->
 [`aws-vault`]: https://github.com/99designs/aws-vault/
