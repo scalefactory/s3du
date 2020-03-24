@@ -102,7 +102,7 @@ impl BucketSizer for Client {
             debug!("bucket_size: API returned: {:#?}", output);
 
             // If we don't get any datapoints, proceed to the next input
-            let datapoints = match output.datapoints {
+            let mut datapoints = match output.datapoints {
                 Some(d) => d,
                 None    => continue,
             };
@@ -115,11 +115,31 @@ impl BucketSizer for Client {
                 );
             }
 
+            // We don't know which order datapoints will be in if we get more
+            // than a single datapoint, so we must sort them.
+            // We sort so that the latest datapoint is at index 0 of the vec.
+            datapoints.sort_by(|a, b| {
+                let a_timestamp: DateTime<Utc> = a.timestamp
+                    .as_ref()
+                    .expect("Couldn't unwrap a_timestamp")
+                    .parse()
+                    .expect("Couldn't parse a_timestamp");
+
+                let b_timestamp: DateTime<Utc> = b.timestamp
+                    .as_ref()
+                    .expect("Couldn't unwrap b_timestamp")
+                    .parse()
+                    .expect("Couldn't parse b_timestamp");
+
+                b_timestamp.cmp(&a_timestamp)
+            });
+
             let datapoint = &datapoints[0];
 
             // BucketSizeBytes only supports Average, so this should be safe
             // to unwrap.
-            let bytes = datapoint.average.unwrap();
+            let bytes = datapoint.average
+                .expect("Could't unwrap average");
 
             // Add up the size of each storage type
             size += bytes as usize;
