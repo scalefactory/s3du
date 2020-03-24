@@ -23,13 +23,13 @@ For example, if you manage your credentials with [`aws-vault`], you might run
 aws-vault exec s3du-role -- s3du
 ```
 
-By default, `s3du` will operate in the `eu-west-1` region. This can be
+By default, `s3du` will operate in the `us-east-1` region. This can be
 overridden either by the `AWS_REGION` environment variable, or the `--region`
 CLI argument.
 
 ```shell
 # Overriding the default AWS region with an environment variable
-env AWS_REGION=us-east-1 s3du
+env AWS_REGION=eu-west-1 s3du
 
 # Overriding the default AWS region with a CLI arg
 s3du --region=eu-central-1
