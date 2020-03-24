@@ -1,0 +1,140 @@
+.Dd March 24, 2020
+.Dt S3DU 1
+.Os
+.Sh NAME
+.Nm s3du
+.Nd Utility for displaying AWS S3 bucket space usage
+.Sh SYNOPSIS
+.Nm
+.Op Fl hV
+.Op Fl Fl help
+.Op Fl Fl version
+.Nm
+.Op Fl b Fl Fl bucket Ns = Ns Ar bucket
+.Op Fl m Fl Fl mode Ns = Ns Ar mode
+.Op Fl o Fl Fl s3-object-versions Ns = Ns Ar versions
+.Op Fl r Fl Fl region Ns = Ns Ar region
+.Op Fl u Fl Fl unit Ns = Ns Ar unit
+.Sh DESCRIPTION
+.Nm
+is a utility for displaying space used in AWS S3 buckets.
+The options are as follows:
+.Bl -tag -width indent
+.It Fl h , Fl Fl help
+Prints help information
+.It Fl V , Fl Fl version
+Prints version information
+.It Fl b Ar bucket , Fl Fl bucket Ns = Ns Ar bucket
+Specify a single
+.Ar bucket
+to get the size for.
+If this argument isn't present sizes for all buckets in the AWS account will be
+shown.
+.It Fl o Ar mode , Fl Fl mode Ns = Ns Ar mode
+Specify which mode
+.Nm
+should run in.
+Possibly values are:
+.Dq Cm cloudwatch
+and
+.Dq Cm s3 .
+.Cm cloudwatch
+mode is cheaper at the cost of some accuracy while
+.Cm s3
+mode is more expensive but very accurate.
+Defaults to
+.Dq Cm cloudwatch .
+.It Fl o Ar versions , Fl Fl s3-object-versions Ns = Ns Ar versions
+Specifies which object versions to sum the size of in
+.Cm s3
+mode.
+Possible values are:
+.Dq Cm all ,
+.Dq Cm current ,
+and
+.Dq Cm non-current .
+This flag will only be present if
+.Nm
+was compiled with the
+.Dq Cm s3
+feature.
+Defaults to
+.Dq Cm current .
+.It Fl r Ar region , Fl Fl region Ns = Ns Ar region
+Specify the AWS region to operate in.
+If this argument isn't present
+.Nm
+will default to
+.Dq Cm us-east-1 .
+.It Fl u Ar unit , Fl Fl unit Ns = Ns Ar unit
+Specify which
+.Ar unit
+to show bucket sizes in.
+Possible values are
+.Dq Cm binary ,
+.Dq Cm bytes ,
+and
+.Dq Cm decimal .
+.Ar binary
+will show human friendly sizes using
+.Dq SI
+units (multiples of 1024).
+.Ar bytes
+will show the number of bytes used.
+.Ar decimal
+will show human friendly sizes using regular units (multiples of 1000).
+Defaults to
+.Dq Cm binary .
+.El
+.Sh ENVIRONMENT
+.Nm
+can also take tis configuration from environment variables.
+In the event that both command line options and environment variables are
+specified, the command line options will win.
+.Bl -tag -width S3DU_OBJECT_VERSIONS
+.It Ev AWS_REGION
+is equivalent to setting the
+.Fl Fl region
+option.
+.It Ev S3DU_BUCKET
+is equivalent to setting the
+.Fl Fl bucket
+option.
+.It Ev S3DU_MODE
+is equivalent to setting the
+.Fl Fl mode
+option.
+.It Ev S3DU_OBJECT_VERSIONS
+is equivalent to setting the
+.Fl Fl s3-object-versions
+option.
+This environment variable will only be present if
+.Nm
+has been compiled with the
+.Dq Cm s3
+feature.
+.It Ev S3DU_UNIT
+is equivalent to setting the
+.Fl Fl unit
+option.
+.El
+.Sh FILES
+.Bl -tag -width /usr/local/bin/s3du -compact
+.It Pa /usr/local/bin/s3du
+the
+.Nm
+binary.
+.El
+.Sh HISTORY
+.Nm
+was started around the beginning of 2020 and became feature complete around
+March 2020 during the COVID-19
+.Dq coronavirus
+pandemic.
+.Sh AUTHORS
+.Nm
+was developed by
+.An David O'Rourke .
+.Sh BUGS
+Please report bugs, issues, and feature requests to
+.Lk https://github.com/phyber/s3du/issues
