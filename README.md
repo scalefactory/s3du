@@ -133,6 +133,32 @@ This policy will enforce HTTPS use and will allow `s3du` access to the AWS S3
 }
 ```
 
+## API Usage
+
+Each of the methods for obtaining bucket sizes have different costs within AWS
+as they will make differing numbers of API calls, and each API has its own
+pricing model which may also vary by region.
+
+### CloudWatch
+
+AWS CloudWatch is almost certain to be the cheapest method of running `s3du`.
+At the time of writing this `README`, the AWS CloudWatch free tier includes
+1 million API calls per month, with costs after that being $0.01 per 1,000
+API requests.
+
+The CloudWatch mode of `s3du` will use at least 1 API call to perform the
+`ListMetrics` call and at least 1 API call per S3 bucket for the
+`GetMetricStatistics` call.
+
+The reason these are listed as "at least 1" is because the API call results
+could be paginated if the results lists are sufficiently long.
+`ListMetrics` will paginate after 500 results while `GetMetricStatistics` will
+paginate after 1,440 statistics.
+
+As a basic example, getting bucket sizes for an AWS account with 4 S3 buckets
+in it should use 5 API calls total. 1 `ListMetrics` call to discover the
+buckets and 4 `GetMetricStatistics` calls (one for each bucket).
+
 <!-- links -->
 [`aws-vault`]: https://github.com/99designs/aws-vault/
 [once per day]: https://docs.aws.amazon.com/AmazonS3/latest/dev/cloudwatch-monitoring.html
