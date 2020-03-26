@@ -112,7 +112,10 @@ fn main() -> Result<()> {
     #[cfg(feature = "s3")]
     {
         if config.mode == ClientMode::S3 {
+            // This should be safe, we validated this in the CLI parser.
             let versions = matches.value_of("OBJECT_VERSIONS").unwrap();
+
+            // This should be safe, due to validation of the above.
             let versions = S3ObjectVersions::from_str(versions).unwrap();
 
             config.s3_object_versions = versions;

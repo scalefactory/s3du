@@ -76,6 +76,8 @@ impl Client {
                         // Here we take out object version selection into
                         // account. We only return v.size if we care about that
                         // object version.
+                        // Unwrap is hopefully safe, objects should always come
+                        // with this.
                         let is_latest = v.is_latest.unwrap();
 
                         match self.object_versions {

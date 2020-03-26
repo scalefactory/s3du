@@ -30,6 +30,8 @@ impl BucketMetrics {
 
     // Return storage types of a given bucket
     pub fn storage_types(&self, bucket: &str) -> &StorageTypes {
+        // Unwrap should be safe here, elsewhere we already check that the
+        // bucket is valid.
         self.0
             .get(bucket)
             .unwrap()
