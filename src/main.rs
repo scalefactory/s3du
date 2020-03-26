@@ -1,4 +1,4 @@
-//! s3du: A tool for informing you of the used space in AWS S3.
+//! s3du: A tool for informing you of the used space in AWS S3 buckets.
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 #![allow(clippy::redundant_field_names)]
@@ -13,7 +13,10 @@ use rusoto_core::Region;
 use std::str::FromStr;
 use tokio::runtime::Runtime;
 
+/// Command line parsing.
 mod cli;
+
+/// Common types and traits.
 mod common;
 use common::{
     BucketSizer,
@@ -25,12 +28,15 @@ use common::{
 #[cfg(feature = "s3")]
 use common::S3ObjectVersions;
 
+/// CloudWatch Client.
 #[cfg(feature = "cloudwatch")]
 mod cloudwatch;
+
+/// S3 Client.
 #[cfg(feature = "s3")]
 mod s3;
 
-// Return the appropriate AWS client for fetching the bucket size
+/// Return the appropriate AWS client with the given `ClientConfig`.
 fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
     let mode   = &config.mode;
     let region = &config.region;
@@ -51,7 +57,7 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
     }
 }
 
-// Return a filesize as a human readable size, if that was requested
+/// Return `size` as a human friendly size if requested by `SizeUnit`.
 fn humansize(size: usize, unit: &SizeUnit) -> String {
     match unit {
         SizeUnit::Binary(unit)  => size.file_size(unit).unwrap(),
@@ -60,7 +66,7 @@ fn humansize(size: usize, unit: &SizeUnit) -> String {
     }
 }
 
-// du: Perform the actual get and output of the bucket sizes.
+/// Perform the actual get and output of the bucket sizes.
 async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
     // List all of our buckets
     let bucket_names = client.list_buckets().await?;
@@ -78,7 +84,7 @@ async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
     Ok(())
 }
 
-// Entry point
+/// Entry point
 fn main() -> Result<()> {
     pretty_env_logger::init();
 
