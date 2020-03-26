@@ -15,22 +15,23 @@ use rusoto_s3::{
 };
 use super::bucket_list::BucketList;
 
+/// The S3 `Client`.
 pub struct Client {
-    // client: The Rusoto S3Client
+    /// The Rusoto `S3Client`.
     pub client: S3Client,
 
-    // Selected bucket name, if any
+    /// Selected bucket name, if any.
     pub bucket_name: Option<String>,
 
-    // buckets: Cache of the BucketList
+    /// Cache of the `BucketList`.
     pub buckets: Option<BucketList>,
 
-    // object_versions: This tells us which objects to list in the bucket
+    /// Configuration for which objects to list in the bucket.
     pub object_versions: S3ObjectVersions,
 }
 
 impl Client {
-    // Return a new CloudWatchClient in the specified region.
+    /// Return a new S3 `Client` with the given `ClientConfig`.
     pub fn new(config: ClientConfig) -> Self {
         let bucket_name = config.bucket_name;
         let region      = config.region;
@@ -50,7 +51,10 @@ impl Client {
         }
     }
 
-    // List object versions and filter according to S3ObjectVersions
+    /// List object versions and filter according to `S3ObjectVersions`.
+    ///
+    /// This will be used when the size of `All` or `NonCurrent` objects is
+    /// requested.
     async fn size_object_versions(&self, bucket: &str) -> Result<usize> {
         let mut next_key_marker        = None;
         let mut next_version_id_marker = None;
@@ -120,8 +124,9 @@ impl Client {
         Ok(size)
     }
 
-    // Return the size of current object versions in the bucket. Handles paging
-    // so should work on large buckets.
+    /// Return the size of current object versions in the bucket.
+    ///
+    /// This will be used when the size of `Current` objects is requested.
     async fn size_current_objects(&self, bucket: &str) -> Result<usize> {
         let mut continuation_token = None;
         let mut size               = 0;
@@ -159,7 +164,8 @@ impl Client {
         Ok(size)
     }
 
-    // A wrapper to call the appropriate bucket listing functions
+    /// A wrapper to call the appropriate bucket sizing function depending on
+    /// the `S3ObjectVersions` configuration the `Client` was created with.
     pub async fn size_objects(&self, bucket: &str) -> Result<usize> {
         match self.object_versions {
             S3ObjectVersions::All => {

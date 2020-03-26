@@ -4,9 +4,10 @@
 use crate::common::BucketNames;
 use rusoto_s3::ListBucketsOutput;
 
+/// Holds a `Vec` of discovered S3 bucket names.
 pub struct BucketList(Vec<String>);
 
-// Implement a conversion From ListBucketsOutput to BucketList
+/// Implement a conversion from `rusoto_s3::ListBucketsOutput` to `BucketList`.
 impl From<ListBucketsOutput> for BucketList {
     fn from(output: ListBucketsOutput) -> Self {
         let mut bucket_names = vec![];
@@ -27,12 +28,12 @@ impl From<ListBucketsOutput> for BucketList {
 }
 
 impl BucketList {
-    // Return a reference to a vec of bucket names
+    /// Return a reference to a `Vec` of `BucketNames`.
     pub fn bucket_names(&self) -> &BucketNames {
         &self.0
     }
 
-    // Filter our bucket list to only the one listed, if any.
+    /// Filter our `BucketNames` to only the given `bucket`.
     pub fn filter(&mut self, bucket: &str) {
         self.0.retain(|b| b == bucket)
     }
