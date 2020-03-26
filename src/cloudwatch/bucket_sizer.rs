@@ -23,9 +23,9 @@ use super::client::Client;
 
 #[async_trait]
 impl BucketSizer for Client {
-    // Return a list of S3 bucket names from CloudWatch.
-    // We also cache the returned metrics here, since we need to reference this
-    // elsewhere, and we don't want to have to query for it again.
+    /// Return a list of S3 bucket names from CloudWatch.
+    /// We also cache the returned metrics here, since we need to reference this
+    /// elsewhere, and we don't want to have to query for it again.
     async fn list_buckets(&mut self) -> Result<BucketNames> {
         let metrics: BucketMetrics = self.list_metrics().await?.into();
         let bucket_names           = metrics.bucket_names();
@@ -35,7 +35,7 @@ impl BucketSizer for Client {
         Ok(bucket_names)
     }
 
-    // Get the size of a given bucket
+    /// Get the size of a given bucket
     async fn bucket_size(&self, bucket: &str) -> Result<usize> {
         debug!("bucket_size: Calculating size for '{}'", bucket);
 

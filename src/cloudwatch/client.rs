@@ -14,19 +14,20 @@ use rusoto_cloudwatch::{
 };
 use super::bucket_metrics::BucketMetrics;
 
+/// A CloudWatch `Client`
 pub struct Client {
-    // client: The Rusoto CloudWatchClient
+    /// The Rusoto `CloudWatchClient`.
     pub client:  CloudWatchClient,
 
-    // Bucket name that was selected.
+    /// Bucket name that was selected, if any.
     pub bucket_name: Option<String>,
 
-    // metrics: A cache of BucketMetrics returned by AWS
+    /// A cache of `BucketMetrics` returned by AWS.
     pub metrics: Option<BucketMetrics>,
 }
 
 impl Client {
-    // Return a new CloudWatchClient in the specified region.
+    /// Return a new `Client` with the given `ClientConfig`.
     pub fn new(config: ClientConfig) -> Self {
         let bucket_name = config.bucket_name;
         let region      = config.region;
@@ -45,28 +46,31 @@ impl Client {
         }
     }
 
-    // Return an ISO8601 formatted timestamp suitable for
-    // GetMetricsStatisticsInput.
+    /// Return an ISO8601 formatted timestamp suitable for
+    /// `GetMetricsStatisticsInput`.
     pub fn iso8601(&self, dt: DateTime<Utc>) -> String {
         dt.to_rfc3339_opts(SecondsFormat::Secs, true)
     }
 
-    // Get list of buckets with BucketSizeBytes metrics.
-    // An individual metric resembles the following:
-    // Metric {
-    //   dimensions: Some([
-    //     Dimension {
-    //       name: "StorageType",
-    //       value: "StandardStorage"
-    //     },
-    //     Dimension {
-    //       name: "BucketName",
-    //       value: "some-bucket-name"
-    //     }
-    //   ]),
-    //   metric_name: Some("BucketSizeBytes"),
-    //   namespace: Some("AWS/S3")
-    // }
+    /// Get list of buckets with `BucketSizeBytes` metrics.
+    ///
+    /// An individual metric resembles the following:
+    /// ```rust
+    /// Metric {
+    ///   metric_name: Some("BucketSizeBytes"),
+    ///   namespace:   Some("AWS/S3")
+    ///   dimensions:  Some([
+    ///     Dimension {
+    ///       name:  "StorageType",
+    ///       value: "StandardStorage"
+    ///     },
+    ///     Dimension {
+    ///       name:  "BucketName",
+    ///       value: "some-bucket-name"
+    ///     }
+    ///   ]),
+    /// }
+    /// ```
     pub async fn list_metrics(&self) -> Result<Vec<Metric>> {
         debug!("list_metrics: Listing...");
 

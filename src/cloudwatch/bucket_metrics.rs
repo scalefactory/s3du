@@ -6,16 +6,17 @@ use log::debug;
 use rusoto_cloudwatch::Metric;
 use std::collections::HashMap;
 
-// Convenience type for our returned storage types
+/// Convenience type for our returned storage types
 type StorageTypes = Vec<String>;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
 // are used within the bucket.
+/// Holds a HashMap of bucket names and their storage types.
 #[derive(Debug, PartialEq)]
 pub struct BucketMetrics(pub HashMap<String, StorageTypes>);
 
 impl BucketMetrics {
-    // Return the bucket names from the BucketMetrics
+    /// Return the bucket names from the `BucketMetrics`.
     pub fn bucket_names(&self) -> BucketNames {
         debug!(
             "BucketMetrics::bucket_names: Returning names from: {:#?}",
@@ -28,7 +29,7 @@ impl BucketMetrics {
             .collect()
     }
 
-    // Return storage types of a given bucket
+    /// Return storage types of a given bucket.
     pub fn storage_types(&self, bucket: &str) -> &StorageTypes {
         // Unwrap should be safe here, elsewhere we already check that the
         // bucket is valid.
@@ -38,7 +39,7 @@ impl BucketMetrics {
     }
 }
 
-// Conversion from a Vec<Metric> as returned by AWS to our BucketMetrics
+/// Conversion from a `Vec<Metric>` as returned by AWS to our `BucketMetrics`.
 impl From<Vec<Metric>> for BucketMetrics {
     fn from(metrics: Vec<Metric>) -> Self {
         let mut bucket_metrics = HashMap::new();
