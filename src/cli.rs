@@ -1,4 +1,4 @@
-// Command line interface parsing
+// cli: This module is responsible for command line interface parsing
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use clap::{
@@ -15,29 +15,32 @@ use rusoto_core::Region;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 
-// Default mode that s3du runs in
 // This catches cases where we've compiled with either:
 //   - Only "cloudwatch"
 //   - Both "cloudwatch" and "s3"
+/// Default mode that `s3du` runs in.
 #[cfg(feature = "cloudwatch")]
 const DEFAULT_MODE: &str = "cloudwatch";
 
 // This catches cases where we've compiled with:
 //   - Only "s3"
+/// Default mode that `s3du` runs in.
 #[cfg(all(feature = "s3", not(feature = "cloudwatch")))]
 const DEFAULT_MODE: &str = "s3";
 
-// Default object versions to sum in S3 mode
+/// Default object versions to sum in S3 mode.
 #[cfg(feature = "s3")]
 const DEFAULT_OBJECT_VERSIONS: &str = "current";
 
-// Default AWS region if one isn't provided on the command line
+/// Default AWS region if one isn't provided on the command line.
 const DEFAULT_REGION: &str = "us-east-1";
 
-// Default unit to display sizes in
+/// Default unit to display sizes in.
 const DEFAULT_UNIT: &str = "binary";
 
-// This should match the string values in the ClientMode FromStr impl in common
+// This should match the string values in the ClientMode FromStr impl in
+// common.
+/// Valid modes for the `--mode` command line switch.
 const VALID_MODES: &[&str] = &[
     #[cfg(feature = "cloudwatch")]
     "cloudwatch",
@@ -45,7 +48,8 @@ const VALID_MODES: &[&str] = &[
     "s3",
 ];
 
-// This should match the string values in the UnitSize FromStr impl in common
+// This should match the string values in the UnitSize FromStr impl in common.
+/// Valid unit sizes for the `--unit` command line switch.
 const VALID_SIZE_UNITS: &[&str] = &[
     "binary",
     "bytes",
@@ -53,6 +57,7 @@ const VALID_SIZE_UNITS: &[&str] = &[
 ];
 
 // This should match the ObjectVersions in the common.rs
+/// Valid S3 object versions for the `--s3-object-versions` switch.
 #[cfg(feature = "s3")]
 const S3_OBJECT_VERSIONS: &[&str] = &[
     "all",
@@ -60,9 +65,10 @@ const S3_OBJECT_VERSIONS: &[&str] = &[
     "non-current",
 ];
 
-// Ensures that the AWS region that we're passed is valid.
-// There's a chance that this can be incorrect if AWS releases a region and
-// Rusoto lags behind on updating the Region list in rusoto_core.
+/// Ensures that the AWS region that we're passed is valid.
+///
+/// There's a chance that this can be incorrect if AWS releases a region and
+/// Rusoto lags behind on updating the Region list in `rusoto_core`.
 fn is_valid_aws_region(s: String) -> Result<(), String> {
     match Region::from_str(&s) {
         Ok(_)  => Ok(()),
@@ -70,11 +76,13 @@ fn is_valid_aws_region(s: String) -> Result<(), String> {
     }
 }
 
-// Ensures that a given bucket name is valid.
-// This validation is taken from:
-// https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
-// specifically, the new standard.
-// This prevents us from sending API calls to AWS which will never be serviced.
+/// Ensures that a given bucket name is valid.
+///
+/// This validation is taken from
+/// https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html,
+/// specifically, the new standard.
+/// This prevents us from sending API calls to AWS which will never be
+/// serviced.
 fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
     // Bucket name cannot be empty
     if s.is_empty() {
@@ -119,7 +127,7 @@ fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
     Ok(())
 }
 
-// Crate clap app
+/// Create the command line parser
 fn create_app<'a, 'b>() -> App<'a, 'b> {
     debug!("Creating CLI app");
 
@@ -191,6 +199,7 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
     app
 }
 
+/// Parse the command line arguments
 pub fn parse_args<'a>() -> ArgMatches<'a> {
     debug!("Parsing command line arguments");
 
