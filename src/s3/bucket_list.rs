@@ -5,7 +5,7 @@ use crate::common::BucketNames;
 use rusoto_s3::ListBucketsOutput;
 
 /// Holds a `Vec` of discovered S3 bucket names.
-pub struct BucketList(Vec<String>);
+pub struct BucketList(BucketNames);
 
 /// Implement a conversion from `rusoto_s3::ListBucketsOutput` to `BucketList`.
 impl From<ListBucketsOutput> for BucketList {
