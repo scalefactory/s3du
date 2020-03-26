@@ -130,10 +130,10 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name("BUCKET")
                 .env("S3DU_BUCKET")
-                .long("bucket")
-                .short("b")
+                .hide_env_values(true)
+                .index(1)
                 .value_name("BUCKET")
-                .help("Bucket to retrieve size of")
+                .help("Bucket to retrieve size of, retrieves all if not passed")
                 .takes_value(true)
                 .validator(is_valid_aws_s3_bucket_name)
         )
