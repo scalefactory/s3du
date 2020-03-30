@@ -10,27 +10,28 @@
 .Op Fl Fl help
 .Op Fl Fl version
 .Nm
-.Op Fl b Fl Fl bucket Ns = Ns Ar bucket
-.Op Fl m Fl Fl mode Ns = Ns Ar mode
-.Op Fl o Fl Fl s3-object-versions Ns = Ns Ar versions
-.Op Fl r Fl Fl region Ns = Ns Ar region
-.Op Fl u Fl Fl unit Ns = Ns Ar unit
+.Op Fl m Ar mode
+.Op Fl o Ar versions
+.Op Fl r Ar region
+.Op Fl u Ar unit
+.Op Ar bucket
 .Sh DESCRIPTION
 .Nm
 is a utility for displaying space used in AWS S3 buckets.
+If no
+.Ar bucket
+argument is passed,
+.Nm
+will display the space used by all discovered buckets.
+.Nm
+follows the default AWS credentials chain.
 The options are as follows:
 .Bl -tag -width indent
 .It Fl h , Fl Fl help
 Prints help information
 .It Fl V , Fl Fl version
 Prints version information
-.It Fl b Ar bucket , Fl Fl bucket Ns = Ns Ar bucket
-Specify a single
-.Ar bucket
-to get the size for.
-If this argument isn't present sizes for all buckets in the AWS account will be
-shown.
-.It Fl o Ar mode , Fl Fl mode Ns = Ns Ar mode
+.It Fl m Ar mode , Fl Fl mode Ns = Ns Ar mode
 Specify which mode
 .Nm
 should run in.
@@ -89,25 +90,25 @@ Defaults to
 .Sh ENVIRONMENT
 .Nm
 can also take tis configuration from environment variables.
-In the event that both command line options and environment variables are
-specified, the command line options will win.
+In the event that both command line arguments and environment variables are
+specified, the command line arguments will win.
 .Bl -tag -width S3DU_OBJECT_VERSIONS
 .It Ev AWS_REGION
 is equivalent to setting the
 .Fl Fl region
-option.
+argument.
 .It Ev S3DU_BUCKET
 is equivalent to setting the
-.Fl Fl bucket
-option.
+.Ar bucket
+argument.
 .It Ev S3DU_MODE
 is equivalent to setting the
 .Fl Fl mode
-option.
+argument.
 .It Ev S3DU_OBJECT_VERSIONS
 is equivalent to setting the
 .Fl Fl s3-object-versions
-option.
+argument.
 This environment variable will only be present if
 .Nm
 has been compiled with the
@@ -116,7 +117,7 @@ feature.
 .It Ev S3DU_UNIT
 is equivalent to setting the
 .Fl Fl unit
-option.
+argument.
 .El
 .Sh FILES
 .Bl -tag -width /usr/local/bin/s3du -compact
@@ -125,6 +126,22 @@ the
 .Nm
 binary.
 .El
+.Sh EXIT STATUS
+The
+.Nm
+utility exits 0 on success, and >0 if an error occurs.
+.Sh EXAMPLES
+List all bucket sizes via CloudWatch in the default region:
+.Pp
+.Dl $ s3du
+.Pp
+Show a specific bucket size via CloudWatch in a non-default region:
+.Pp
+.Dl $ s3du --region=eu-west-1 my-bucket
+.Pp
+Show a specific bucket via S3 showing the size of only non-current objects:
+.Pp
+.Dl $ s3du --mode=s3 --s3-object-versions=non-current my-bucket
 .Sh HISTORY
 .Nm
 was started around the beginning of 2020 and became feature complete around
@@ -138,3 +155,19 @@ was developed by
 .Sh BUGS
 Please report bugs, issues, and feature requests to
 .Lk https://github.com/phyber/s3du/issues
+.Sh SECURITY CONSIDERATIONS
+It is best to use
+.Nm
+with an AWS IAM user or role specifically created for
+.Nm .
+The policy applied to this user or role should grant the following permissions
+for CloudWatch mode:
+.Pp
+.Dl cloudwatch:GetMetricStatistics
+.Dl cloudwatch:ListMetrics
+.Pp
+and should grant the following for S3 mode:
+.Pp
+.Dl s3:GetBucketLocation
+.Dl s3:ListAllMyBuckets
+.Dl s3:ListBucket
