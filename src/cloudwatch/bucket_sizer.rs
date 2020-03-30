@@ -7,18 +7,12 @@ use anyhow::{
 };
 use async_trait::async_trait;
 use chrono::prelude::*;
-use chrono::Duration;
 use crate::common::{
     Bucket,
     Buckets,
     BucketSizer,
 };
 use log::debug;
-use rusoto_cloudwatch::{
-    CloudWatch,
-    Dimension,
-    GetMetricStatisticsInput,
-};
 use super::bucket_metrics::BucketMetrics;
 use super::client::Client;
 
@@ -33,9 +27,12 @@ impl BucketSizer for Client {
         let mut buckets = Buckets::new();
 
         for bucket in metrics.bucket_names() {
+            let storage_types = metrics.storage_types(&bucket).to_owned();
+
             let bucket = Bucket {
-                name:   bucket,
-                region: None,
+                name:          bucket,
+                region:        None,
+                storage_types: Some(storage_types),
             };
 
             buckets.push(bucket);
@@ -54,79 +51,21 @@ impl BucketSizer for Client {
 
         let mut size: usize = 0;
 
-        // We need to know which storage types are available for a bucket.
-        let metrics = match &self.metrics {
-            Some(m) => Ok(m),
-            None    => Err(anyhow!("No bucket metrics")),
-        }?;
-        let storage_types = metrics.storage_types(bucket_name);
-
-        debug!(
-            "bucket_size: Found storage types '{:?}' for '{}'",
-            storage_types,
-            bucket_name,
-        );
-
-        // Get the time now so we can select the last 24 hours of metrics.
-        let now: DateTime<Utc> = Utc::now();
-        let one_day            = Duration::days(1);
-
-        // Create queries for each bucket storage type.
-        let iter = storage_types.iter();
-        let inputs: Vec<GetMetricStatisticsInput> = iter.map(|st| {
-            // Dimensions for bucket selection
-            let dimensions = vec![
-                Dimension {
-                    name:  "BucketName".into(),
-                    value: bucket_name.into(),
-                },
-                Dimension {
-                    name:  "StorageType".into(),
-                    value: st.into(),
-                },
-            ];
-
-            // Actual query
-            // We look back two days (start_time) since sometimes CloudWatch
-            // doesn't have the previous 24h for us yet.
-            GetMetricStatisticsInput {
-                dimensions:  Some(dimensions),
-                end_time:    self.iso8601(now),
-                metric_name: "BucketSizeBytes".into(),
-                namespace:   "AWS/S3".into(),
-                period:      one_day.num_seconds(),
-                start_time:  self.iso8601(now - (one_day * 2)),
-                statistics:  Some(vec!["Average".into()]),
-                unit:        Some("Bytes".into()),
-                ..Default::default()
-            }
-        })
-        .collect();
-
-        // Perform a query for each bucket storage type
-        for input in inputs {
-            debug!(
-                "bucket_size: Performing API call for input: {:#?}",
-                input,
-            );
-
-            let output = self.client.get_metric_statistics(input).await?;
-
-            debug!("bucket_size: API returned: {:#?}", output);
-
-            // If we don't get any datapoints, proceed to the next input
-            let mut datapoints = match output.datapoints {
+        let metric_statistics = self.get_metric_statistics(bucket).await?;
+        for stats in metric_statistics {
+            // If we don't get any datapoints, proceed to the next input.
+            let mut datapoints = match stats.datapoints {
                 Some(d) => d,
                 None    => continue,
             };
 
-            // We only use 24h of data, so there should only ever be one
-            // datapoint.
+            // It's possible that CloudWatch could return nothing. Return an
+            // error in this case.
             if datapoints.is_empty() {
                 return Err(
                     anyhow!("Failed to fetch any CloudWatch datapoints!")
-                );
-            }
+                )
+            };
 
             // We don't know which order datapoints will be in if we get more
             // than a single datapoint, so we must sort them.
@@ -156,6 +95,7 @@ impl BucketSizer for Client {
 
             // Add up the size of each storage type
             size += bytes as usize;
+
         }
 
         debug!(
@@ -283,9 +223,14 @@ mod tests {
             Some(metrics),
         );
 
+        let storage_types = vec![
+            "StandardStorage".into(),
+        ];
+
         let bucket = Bucket {
-            name:   "some-other-bucket-name".into(),
-            region: None,
+            name:          "some-other-bucket-name".into(),
+            region:        None,
+            storage_types: Some(storage_types),
         };
 
         let ret = Runtime::new()

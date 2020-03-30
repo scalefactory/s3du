@@ -3,12 +3,19 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use chrono::prelude::*;
-use crate::common::ClientConfig;
+use chrono::Duration;
+use crate::common::{
+    Bucket,
+    ClientConfig,
+};
 use log::debug;
 use rusoto_cloudwatch::{
     CloudWatch,
     CloudWatchClient,
+    Dimension,
     DimensionFilter,
+    GetMetricStatisticsInput,
+    GetMetricStatisticsOutput,
     ListMetricsInput,
     Metric,
 };
@@ -44,6 +51,59 @@ impl Client {
             bucket_name: bucket_name,
             metrics:     None,
         }
+    }
+
+    /// Returns a `Vec` of `GetMetricStatisticsOutput` for the given `Bucket`.
+    ///
+    /// This returns a `Vec` because there is one `GetMetricStatisticsOutput`
+    /// for each S3 bucket storage type that CloudWatch has statistics for.
+    pub async fn get_metric_statistics(
+        &self,
+        bucket: &Bucket,
+    ) -> Result<Vec<GetMetricStatisticsOutput>> {
+        let now: DateTime<Utc> = Utc::now();
+        let one_day            = Duration::days(1);
+
+        let storage_types = match &bucket.storage_types {
+            Some(st) => st.to_owned(),
+            None     => vec![],
+        };
+
+        let inputs: Vec<GetMetricStatisticsInput> = storage_types.iter()
+            .map(|storage_type| {
+                let dimensions = vec![
+                    Dimension {
+                        name:  "BucketName".into(),
+                        value: bucket.name.to_owned(),
+                    },
+                    Dimension {
+                        name:  "StorageType".into(),
+                        value: storage_type.to_owned(),
+                    },
+                ];
+
+                GetMetricStatisticsInput {
+                    dimensions: Some(dimensions),
+                    end_time:   self.iso8601(now),
+                    metric_name: "BucketSizeBytes".into(),
+                    namespace:   "AWS/S3".into(),
+                    period:      one_day.num_seconds(),
+                    start_time:  self.iso8601(now - (one_day * 2)),
+                    statistics:  Some(vec!["Average".into()]),
+                    unit:        Some("Bytes".into()),
+                    ..Default::default()
+                }
+            })
+            .collect();
+
+        let mut outputs = vec![];
+
+        for input in inputs {
+            let output = self.client.get_metric_statistics(input).await?;
+            outputs.push(output);
+        }
+
+        Ok(outputs)
     }
 
     /// Return an ISO8601 formatted timestamp suitable for
@@ -129,6 +189,7 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use rusoto_cloudwatch::{
+        Datapoint,
         Dimension,
         Metric,
     };
@@ -162,6 +223,47 @@ mod tests {
             bucket_name: None,
             metrics:     metrics,
         }
+    }
+
+    #[test]
+    fn test_get_metric_statistics() {
+        let client = mock_client(
+            Some("cloudwatch-get-metric-statistics.xml"),
+            None,
+        );
+
+        let storage_types = vec![
+            "StandardStorage".into(),
+        ];
+
+        let bucket = Bucket {
+            name:          "test-bucket".into(),
+            region:        None,
+            storage_types: Some(storage_types),
+        };
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::get_metric_statistics(&client, &bucket))
+            .unwrap();
+
+        let datapoints = vec![
+            Datapoint {
+                average:   Some(123456789.0),
+                timestamp: Some("2020-03-01T20:59:00Z".into()),
+                unit:      Some("Bytes".into()),
+                ..Default::default()
+            },
+        ];
+
+        let expected = vec![
+            GetMetricStatisticsOutput {
+                datapoints: Some(datapoints),
+                label:      Some("BucketSizeBytes".into()),
+            },
+        ];
+
+        assert_eq!(ret, expected);
     }
 
     #[test]

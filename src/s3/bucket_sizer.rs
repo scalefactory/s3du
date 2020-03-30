@@ -36,8 +36,9 @@ impl BucketSizer for Client {
             // we filter for that region here.
             if region == self.region {
                 let bucket = Bucket {
-                    name:   bucket.into(),
-                    region: Some(region),
+                    name:          bucket.into(),
+                    region:        Some(region),
+                    storage_types: None,
                 };
 
                 buckets.push(bucket);
@@ -141,8 +142,9 @@ mod tests {
         );
 
         let bucket = Bucket {
-            name:   "test-bucket".into(),
-            region: None,
+            name:          "test-bucket".into(),
+            region:        None,
+            storage_types: None,
         };
 
         let ret = Runtime::new()
