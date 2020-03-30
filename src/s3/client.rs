@@ -251,6 +251,23 @@ mod tests {
     }
 
     #[test]
+    fn test_get_bucket_location() {
+        let client = mock_client(
+            Some("s3-get-bucket-location.xml"),
+            S3ObjectVersions::Current,
+        );
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::get_bucket_location(&client, "test-bucket"))
+            .unwrap();
+
+        let expected = Region::EuWest1;
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
     fn test_list_buckets() {
         let client = mock_client(
             Some("s3-list-buckets.xml"),
