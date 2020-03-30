@@ -69,16 +69,16 @@ fn humansize(size: usize, unit: &SizeUnit) -> String {
 /// Perform the actual get and output of the bucket sizes.
 async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
     // List all of our buckets
-    let bucket_names = client.list_buckets().await?;
+    let buckets = client.buckets().await?;
 
-    debug!("main: Got bucket names: {:?}", bucket_names);
+    debug!("main: Got buckets: {:?}", buckets);
 
     // For each bucket name, get the size
-    for bucket in bucket_names {
+    for bucket in buckets {
         let size = client.bucket_size(&bucket).await?;
         let size = humansize(size, &unit);
 
-        println!("{size}\t{bucket}", size=size, bucket=bucket);
+        println!("{size}\t{bucket}", size=size, bucket=bucket.name);
     }
 
     Ok(())

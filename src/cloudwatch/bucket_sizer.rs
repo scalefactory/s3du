@@ -9,7 +9,8 @@ use async_trait::async_trait;
 use chrono::prelude::*;
 use chrono::Duration;
 use crate::common::{
-    BucketNames,
+    Bucket,
+    Buckets,
     BucketSizer,
 };
 use log::debug;
@@ -26,18 +27,30 @@ impl BucketSizer for Client {
     /// Return a list of S3 bucket names from CloudWatch.
     /// We also cache the returned metrics here, since we need to reference this
     /// elsewhere, and we don't want to have to query for it again.
-    async fn list_buckets(&mut self) -> Result<BucketNames> {
+    async fn buckets(&mut self) -> Result<Buckets> {
         let metrics: BucketMetrics = self.list_metrics().await?.into();
-        let bucket_names           = metrics.bucket_names();
+
+        let mut buckets = Buckets::new();
+
+        for bucket in metrics.bucket_names() {
+            let bucket = Bucket {
+                name:   bucket,
+                region: None,
+            };
+
+            buckets.push(bucket);
+        }
 
         self.metrics = Some(metrics);
 
-        Ok(bucket_names)
+        Ok(buckets)
     }
 
     /// Get the size of a given bucket
-    async fn bucket_size(&self, bucket: &str) -> Result<usize> {
-        debug!("bucket_size: Calculating size for '{}'", bucket);
+    async fn bucket_size(&self, bucket: &Bucket) -> Result<usize> {
+        let bucket_name = &bucket.name;
+
+        debug!("bucket_size: Calculating size for '{}'", bucket_name);
 
         let mut size: usize = 0;
 
@@ -46,12 +59,12 @@ impl BucketSizer for Client {
             Some(m) => Ok(m),
             None    => Err(anyhow!("No bucket metrics")),
         }?;
-        let storage_types = metrics.storage_types(bucket);
+        let storage_types = metrics.storage_types(bucket_name);
 
         debug!(
             "bucket_size: Found storage types '{:?}' for '{}'",
             storage_types,
-            bucket,
+            bucket_name,
         );
 
         // Get the time now so we can select the last 24 hours of metrics.
@@ -65,7 +78,7 @@ impl BucketSizer for Client {
             let dimensions = vec![
                 Dimension {
                     name:  "BucketName".into(),
-                    value: bucket.into(),
+                    value: bucket_name.into(),
                 },
                 Dimension {
                     name:  "StorageType".into(),
@@ -147,7 +160,7 @@ impl BucketSizer for Client {
 
         debug!(
             "bucket_size: Calculated bucket size for '{}' is '{}'",
-            bucket,
+            bucket_name,
             size,
         );
 
@@ -235,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn test_list_buckets() {
+    fn test_buckets() {
         let expected = vec![
             "a-bucket-name",
             "another-bucket-name",
@@ -245,13 +258,19 @@ mod tests {
             Some("cloudwatch-list-metrics.xml"),
             None,
         );
-        let mut ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::list_buckets(&mut client))
-            .unwrap();
-        ret.sort();
 
-        assert_eq!(ret, expected);
+        let buckets = Runtime::new()
+            .unwrap()
+            .block_on(Client::buckets(&mut client))
+            .unwrap();
+
+        let mut buckets: Vec<String> = buckets.iter()
+            .map(|b| b.name.to_owned())
+            .collect();
+
+        buckets.sort();
+
+        assert_eq!(buckets, expected);
     }
 
     #[test]
@@ -264,10 +283,14 @@ mod tests {
             Some(metrics),
         );
 
-        let bucket = "some-other-bucket-name";
+        let bucket = Bucket {
+            name:   "some-other-bucket-name".into(),
+            region: None,
+        };
+
         let ret = Runtime::new()
             .unwrap()
-            .block_on(Client::bucket_size(&client, bucket))
+            .block_on(Client::bucket_size(&client, &bucket))
             .unwrap();
 
         let expected = 123456789;

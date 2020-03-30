@@ -2,6 +2,9 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+/// The `Bucket` struct
+mod bucket;
+
 /// The `BucketSizer` trait.
 mod bucket_sizer;
 
@@ -20,6 +23,7 @@ mod size_unit;
 #[cfg(feature = "s3")]
 mod s3_object_versions;
 
+pub use bucket::*;
 pub use bucket_sizer::*;
 pub use client_config::*;
 pub use client_mode::*;

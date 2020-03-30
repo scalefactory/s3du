@@ -4,49 +4,61 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use crate::common::{
-    BucketNames,
+    Bucket,
+    Buckets,
     BucketSizer,
 };
 use log::debug;
-use rusoto_s3::S3;
-use super::bucket_list::BucketList;
 use super::client::Client;
 
 #[async_trait]
 impl BucketSizer for Client {
-    /// Return a list of S3 bucket names from S3.
+    /// Return `Buckets` discovered in S3.
     ///
-    /// We also cache a list of buckets here, so we don't have to query it
-    /// again later.
-    async fn list_buckets(&mut self) -> Result<BucketNames> {
-        let mut bucket_list: BucketList = self.client
-            .list_buckets()
-            .await?
-            .into();
+    /// This list of buckets will also be filtered by the following:
+    ///   - The `bucket` argument provided on the command line
+    ///   - The `Region`, ensuring it's in our currently selected `--region`
+    async fn buckets(&mut self) -> Result<Buckets> {
+        let mut bucket_names = self.list_buckets().await?;
 
         // If we were provided with a specific bucket name on the CLI, filter
         // out buckets that don't match.
         if let Some(bucket_name) = self.bucket_name.as_ref() {
-            bucket_list.filter(&bucket_name);
+            bucket_names.retain(|b| b == bucket_name);
         }
 
-        // Get an owned list of names that we can return
-        let bucket_names = bucket_list.bucket_names().to_owned();
+        let mut buckets = Buckets::new();
 
-        self.buckets = Some(bucket_list);
+        for bucket in &bucket_names {
+            let region = self.get_bucket_location(&bucket).await?;
 
-        Ok(bucket_names)
+            // We can only ListBucket for the region our S3 client is in, so
+            // we filter for that region here.
+            if region == self.region {
+                let bucket = Bucket {
+                    name:   bucket.into(),
+                    region: Some(region),
+                };
+
+                buckets.push(bucket);
+            }
+        }
+
+        // Finally, we have a list of buckets that we should be able to get the
+        // size for.
+        Ok(buckets)
     }
 
     /// Return the size of `bucket`.
-    async fn bucket_size(&self, bucket: &str) -> Result<usize> {
-        debug!("bucket_size: Calculating size for '{}'", bucket);
+    async fn bucket_size(&self, bucket: &Bucket) -> Result<usize> {
+        let name = &bucket.name;
+        debug!("bucket_size: Calculating size for '{}'", name);
 
-        let size = self.size_objects(bucket).await?;
+        let size = self.size_objects(name).await?;
 
         debug!(
             "bucket_size: Calculated bucket size for '{}' is '{}'",
-            bucket,
+            name,
             size,
         );
 
@@ -59,6 +71,7 @@ mod tests {
     use super::*;
     use crate::common::S3ObjectVersions;
     use pretty_assertions::assert_eq;
+    use rusoto_core::Region;
     use rusoto_mock::{
         MockCredentialsProvider,
         MockRequestDispatcher,
@@ -88,13 +101,14 @@ mod tests {
         Client {
             client:          client,
             bucket_name:     None,
-            buckets:         None,
             object_versions: versions,
+            region:          Region::UsEast1,
         }
     }
 
     #[test]
-    fn test_list_buckets() {
+    #[ignore]
+    fn test_buckets() {
         let expected = vec![
             "a-bucket-name",
             "another-bucket-name",
@@ -104,13 +118,19 @@ mod tests {
             Some("s3-list-buckets.xml"),
             S3ObjectVersions::Current,
         );
-        let mut ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::list_buckets(&mut client))
-            .unwrap();
-        ret.sort();
 
-        assert_eq!(ret, expected);
+        let buckets = Runtime::new()
+            .unwrap()
+            .block_on(Client::buckets(&mut client))
+            .unwrap();
+
+        let mut buckets: Vec<String> = buckets.iter()
+            .map(|b| b.name.to_owned())
+            .collect();
+
+        buckets.sort();
+
+        assert_eq!(buckets, expected);
     }
 
     #[test]
@@ -120,10 +140,14 @@ mod tests {
             S3ObjectVersions::Current,
         );
 
-        let bucket = "test-bucket";
+        let bucket = Bucket {
+            name:   "test-bucket".into(),
+            region: None,
+        };
+
         let ret = Runtime::new()
             .unwrap()
-            .block_on(Client::bucket_size(&client, bucket))
+            .block_on(Client::bucket_size(&client, &bucket))
             .unwrap();
 
         let expected = 33792;

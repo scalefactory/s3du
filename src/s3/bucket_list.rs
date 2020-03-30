@@ -10,18 +10,14 @@ pub struct BucketList(BucketNames);
 /// Implement a conversion from `rusoto_s3::ListBucketsOutput` to `BucketList`.
 impl From<ListBucketsOutput> for BucketList {
     fn from(output: ListBucketsOutput) -> Self {
-        let mut bucket_names = vec![];
-
-        let buckets = match output.buckets {
-            Some(buckets) => buckets,
-            None          => vec![],
+        let bucket_names = match output.buckets {
+            Some(buckets) => {
+                buckets.iter()
+                    .filter_map(|b| b.name.to_owned())
+                    .collect()
+            },
+            None => vec![],
         };
-
-        for bucket in buckets {
-            if let Some(name) = bucket.name {
-                bucket_names.push(name);
-            }
-        }
 
         BucketList(bucket_names)
     }
@@ -31,11 +27,6 @@ impl BucketList {
     /// Return a reference to a `Vec` of `BucketNames`.
     pub fn bucket_names(&self) -> &BucketNames {
         &self.0
-    }
-
-    /// Filter our `BucketNames` to only the given `bucket`.
-    pub fn filter(&mut self, bucket: &str) {
-        self.0.retain(|b| b == bucket)
     }
 }
 

@@ -3,17 +3,20 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use crate::common::{
+    BucketNames,
     ClientConfig,
     S3ObjectVersions,
 };
 use log::debug;
+use rusoto_core::Region;
 use rusoto_s3::{
+    GetBucketLocationRequest,
     ListObjectsV2Request,
     ListObjectVersionsRequest,
     S3,
     S3Client,
 };
-use super::bucket_list::BucketList;
+use std::str::FromStr;
 
 /// The S3 `Client`.
 pub struct Client {
@@ -23,11 +26,11 @@ pub struct Client {
     /// Selected bucket name, if any.
     pub bucket_name: Option<String>,
 
-    /// Cache of the `BucketList`.
-    pub buckets: Option<BucketList>,
-
     /// Configuration for which objects to list in the bucket.
     pub object_versions: S3ObjectVersions,
+
+    /// `Region` that we're listing buckets in.
+    pub region: Region,
 }
 
 impl Client {
@@ -41,14 +44,42 @@ impl Client {
             region.name(),
         );
 
-        let client = S3Client::new(region);
+        let client = S3Client::new(region.to_owned());
 
         Client {
             client:          client,
             bucket_name:     bucket_name,
-            buckets:         None,
             object_versions: config.s3_object_versions,
+            region:          region,
         }
+    }
+
+    pub async fn list_buckets(&self) -> Result<BucketNames> {
+        let output = self.client.list_buckets().await?;
+
+        let bucket_names = match output.buckets {
+            Some(buckets) => {
+                buckets.iter()
+                    .filter_map(|b| b.name.to_owned())
+                    .collect()
+            },
+            None => vec![],
+        };
+
+        Ok(bucket_names)
+    }
+
+    /// Return the bucket location (`Region`) for the given `bucket`.
+    pub async fn get_bucket_location(&self, bucket: &str) -> Result<Region> {
+        let input = GetBucketLocationRequest {
+            bucket: bucket.to_owned(),
+        };
+
+        let output   = self.client.get_bucket_location(input).await?;
+        let location = output.location_constraint.expect("location");
+        let location = Region::from_str(&location)?;
+
+        Ok(location)
     }
 
     /// List object versions and filter according to `S3ObjectVersions`.
@@ -213,8 +244,8 @@ mod tests {
         Client {
             client:          client,
             bucket_name:     None,
-            buckets:         None,
             object_versions: versions,
+            region:          Region::UsEast1,
         }
     }
 

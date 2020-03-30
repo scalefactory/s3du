@@ -3,7 +3,10 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use async_trait::async_trait;
-use super::BucketNames;
+use super::{
+    Bucket,
+    Buckets,
+};
 
 /// `BucketSizer` represents the required methods to list S3 buckets and find
 /// their sizes.
@@ -11,9 +14,9 @@ use super::BucketNames;
 /// This trait should be implemented by all `Client`s performing these tasks.
 #[async_trait]
 pub trait BucketSizer {
-    /// Returns the size of the given `bucket` in bytes.
-    async fn bucket_size(&self, bucket: &str) -> Result<usize>;
-
     /// Returns a list of bucket names.
-    async fn list_buckets(&mut self) -> Result<BucketNames>;
+    async fn buckets(&mut self) -> Result<Buckets>;
+
+    /// Returns the size of the given `bucket` in bytes.
+    async fn bucket_size(&self, bucket: &Bucket) -> Result<usize>;
 }
