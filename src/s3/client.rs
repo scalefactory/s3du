@@ -54,6 +54,7 @@ impl Client {
         }
     }
 
+    /// Returns a list of bucket names.
     pub async fn list_buckets(&self) -> Result<BucketNames> {
         let output = self.client.list_buckets().await?;
 
@@ -247,6 +248,27 @@ mod tests {
             object_versions: versions,
             region:          Region::UsEast1,
         }
+    }
+
+    #[test]
+    fn test_list_buckets() {
+        let client = mock_client(
+            Some("s3-list-buckets.xml"),
+            S3ObjectVersions::Current,
+        );
+
+        let mut ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::list_buckets(&client))
+            .unwrap();
+        ret.sort();
+
+        let expected: Vec<String> = vec![
+            "a-bucket-name".into(),
+            "another-bucket-name".into(),
+        ];
+
+        assert_eq!(ret, expected);
     }
 
     #[test]
