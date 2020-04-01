@@ -61,7 +61,7 @@ impl Client {
 
         let storage_types = match &bucket.storage_types {
             Some(st) => st.to_owned(),
-            None     => vec![],
+            None     => Vec::new(),
         };
 
         let inputs: Vec<GetMetricStatisticsInput> = storage_types.iter()
@@ -91,7 +91,7 @@ impl Client {
             })
             .collect();
 
-        let mut outputs = vec![];
+        let mut outputs = Vec::new();
 
         for input in inputs {
             let output = self.client.get_metric_statistics(input).await?;
@@ -129,7 +129,7 @@ impl Client {
     pub async fn list_metrics(&self) -> Result<Vec<Metric>> {
         debug!("list_metrics: Listing...");
 
-        let mut metrics    = vec![];
+        let mut metrics    = Vec::new();
         let mut next_token = None;
 
         // If we selected a bucket to list, filter for it here.

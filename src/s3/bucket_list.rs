@@ -16,7 +16,7 @@ impl From<ListBucketsOutput> for BucketList {
                     .filter_map(|b| b.name.to_owned())
                     .collect()
             },
-            None => vec![],
+            None => Vec::new(),
         };
 
         BucketList(bucket_names)

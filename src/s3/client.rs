@@ -64,7 +64,7 @@ impl Client {
                     .filter_map(|b| b.name.to_owned())
                     .collect()
             },
-            None => vec![],
+            None => Vec::new(),
         };
 
         Ok(bucket_names)
