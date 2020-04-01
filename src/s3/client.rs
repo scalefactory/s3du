@@ -71,13 +71,31 @@ impl Client {
     }
 
     /// Return the bucket location (`Region`) for the given `bucket`.
+    ///
+    /// This method will properly handle the case of the `null` (empty) and
+    /// `EU` location constraints, by replacing them with `us-east-1` and
+    /// `eu-west-1` respectively.
     pub async fn get_bucket_location(&self, bucket: &str) -> Result<Region> {
+        debug!("get_bucket_location for '{}'", bucket);
+
         let input = GetBucketLocationRequest {
             bucket: bucket.to_owned(),
         };
 
         let output   = self.client.get_bucket_location(input).await?;
         let location = output.location_constraint.expect("location");
+
+        debug!("GetBucketLocation API returned '{}'", location);
+
+        // Location constraints for sufficiently old buckets in S3 may not
+        // quite meet expectations. These returns are badly documented and the
+        // assumptions here are based on what the web console does.
+        let location = match location.as_ref() {
+            ""   => "us-east-1".to_string(),
+            "EU" => "eu-west-1".to_string(),
+            _    => location,
+        };
+
         let location = Region::from_str(&location)?;
 
         Ok(location)
@@ -263,6 +281,40 @@ mod tests {
             .unwrap();
 
         let expected = Region::EuWest1;
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_get_bucket_location_eu() {
+        let client = mock_client(
+            Some("s3-get-bucket-location-eu.xml"),
+            S3ObjectVersions::Current,
+        );
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::get_bucket_location(&client, "test-bucket"))
+            .unwrap();
+
+        let expected = Region::EuWest1;
+
+        assert_eq!(ret, expected);
+    }
+
+    #[test]
+    fn test_get_bucket_location_null() {
+        let client = mock_client(
+            Some("s3-get-bucket-location-null.xml"),
+            S3ObjectVersions::Current,
+        );
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::get_bucket_location(&client, "test-bucket"))
+            .unwrap();
+
+        let expected = Region::UsEast1;
 
         assert_eq!(ret, expected);
     }
