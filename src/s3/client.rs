@@ -269,7 +269,21 @@ mod tests {
     }
 
     #[test]
-    fn test_get_bucket_location() {
+    fn test_get_bucket_location_err() {
+        let client = mock_client(
+            Some("s3-get-bucket-location-invalid.xml"),
+            S3ObjectVersions::Current,
+        );
+
+        let ret = Runtime::new()
+            .unwrap()
+            .block_on(Client::get_bucket_location(&client, "test-bucket"));
+
+        assert!(ret.is_err());
+    }
+
+    #[test]
+    fn test_get_bucket_location_ok() {
         let client = mock_client(
             Some("s3-get-bucket-location.xml"),
             S3ObjectVersions::Current,
@@ -286,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_bucket_location_eu() {
+    fn test_get_bucket_location_ok_eu() {
         let client = mock_client(
             Some("s3-get-bucket-location-eu.xml"),
             S3ObjectVersions::Current,
@@ -303,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_bucket_location_null() {
+    fn test_get_bucket_location_ok_null() {
         let client = mock_client(
             Some("s3-get-bucket-location-null.xml"),
             S3ObjectVersions::Current,
