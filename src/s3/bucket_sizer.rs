@@ -107,6 +107,8 @@ mod tests {
         }
     }
 
+    // This test is currently ignored as we cannot easily mock multiple
+    // requests at the moment. Issues #1671 and PR #1685 should solve this.
     #[test]
     #[ignore]
     fn test_buckets() {
