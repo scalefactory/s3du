@@ -19,18 +19,14 @@ use rusoto_cloudwatch::{
     ListMetricsInput,
     Metric,
 };
-use super::bucket_metrics::BucketMetrics;
 
 /// A CloudWatch `Client`
 pub struct Client {
     /// The Rusoto `CloudWatchClient`.
-    pub client:  CloudWatchClient,
+    pub client: CloudWatchClient,
 
     /// Bucket name that was selected, if any.
     pub bucket_name: Option<String>,
-
-    /// A cache of `BucketMetrics` returned by AWS.
-    pub metrics: Option<BucketMetrics>,
 }
 
 impl Client {
@@ -49,7 +45,6 @@ impl Client {
         Client {
             client:      client,
             bucket_name: bucket_name,
-            metrics:     None,
         }
     }
 
@@ -205,7 +200,6 @@ mod tests {
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
-        metrics: Option<BucketMetrics>,
     ) -> Client {
         let data = match data_file {
             None    => "".to_string(),
@@ -221,7 +215,6 @@ mod tests {
         Client {
             client:      client,
             bucket_name: None,
-            metrics:     metrics,
         }
     }
 
@@ -229,7 +222,6 @@ mod tests {
     fn test_get_metric_statistics() {
         let client = mock_client(
             Some("cloudwatch-get-metric-statistics.xml"),
-            None,
         );
 
         let storage_types = vec![
@@ -271,7 +263,7 @@ mod tests {
         let dt       = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
         let expected = "2020-03-01T00:16:27Z";
 
-        let client = mock_client(None, None);
+        let client = mock_client(None);
         let ret    = Client::iso8601(&client, dt);
 
         assert_eq!(ret, expected);
@@ -281,7 +273,6 @@ mod tests {
     fn test_list_metrics() {
         let mut client = mock_client(
             Some("cloudwatch-list-metrics.xml"),
-            None,
         );
 
         let ret = Runtime::new()

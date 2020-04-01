@@ -38,8 +38,6 @@ impl BucketSizer for Client {
             buckets.push(bucket);
         }
 
-        self.metrics = Some(metrics);
-
         Ok(buckets)
     }
 
@@ -112,11 +110,7 @@ impl BucketSizer for Client {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use rusoto_cloudwatch::{
-        CloudWatchClient,
-        Dimension,
-        Metric,
-    };
+    use rusoto_cloudwatch::CloudWatchClient;
     use rusoto_mock::{
         MockCredentialsProvider,
         MockRequestDispatcher,
@@ -129,7 +123,6 @@ mod tests {
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
-        metrics: Option<BucketMetrics>,
     ) -> Client {
         let data = match data_file {
             None    => "".to_string(),
@@ -145,46 +138,7 @@ mod tests {
         Client {
             client:      client,
             bucket_name: None,
-            metrics:     metrics,
         }
-    }
-
-    // Metrics used in the tests
-    fn get_metrics() -> Vec<Metric> {
-        vec![
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardIAStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-other-bucket-name".into(),
-                    },
-                ]),
-            },
-        ]
     }
 
     #[test]
@@ -196,7 +150,6 @@ mod tests {
 
         let mut client = mock_client(
             Some("cloudwatch-list-metrics.xml"),
-            None,
         );
 
         let buckets = Runtime::new()
@@ -215,12 +168,8 @@ mod tests {
 
     #[test]
     fn test_bucket_size() {
-        let metrics = get_metrics();
-        let metrics: BucketMetrics = metrics.into();
-
         let client = mock_client(
             Some("cloudwatch-get-metric-statistics.xml"),
-            Some(metrics),
         );
 
         let storage_types = vec![
