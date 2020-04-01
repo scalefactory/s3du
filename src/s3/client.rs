@@ -247,7 +247,6 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
-    use tokio::runtime::Runtime;
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
@@ -274,30 +273,27 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_get_bucket_location_err() {
+    #[tokio::test]
+    async fn test_get_bucket_location_err() {
         let client = mock_client(
             Some("s3-get-bucket-location-invalid.xml"),
             ObjectVersions::Current,
         );
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::get_bucket_location(&client, "test-bucket"));
+        let ret = Client::get_bucket_location(&client, "test-bucket").await;
 
         assert!(ret.is_err());
     }
 
-    #[test]
-    fn test_get_bucket_location_ok() {
+    #[tokio::test]
+    async fn test_get_bucket_location_ok() {
         let client = mock_client(
             Some("s3-get-bucket-location.xml"),
             ObjectVersions::Current,
         );
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::get_bucket_location(&client, "test-bucket"))
+        let ret = Client::get_bucket_location(&client, "test-bucket")
+            .await
             .unwrap();
 
         let expected = Region::EuWest1;
@@ -305,16 +301,15 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    #[test]
-    fn test_get_bucket_location_ok_eu() {
+    #[tokio::test]
+    async fn test_get_bucket_location_ok_eu() {
         let client = mock_client(
             Some("s3-get-bucket-location-eu.xml"),
             ObjectVersions::Current,
         );
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::get_bucket_location(&client, "test-bucket"))
+        let ret = Client::get_bucket_location(&client, "test-bucket")
+            .await
             .unwrap();
 
         let expected = Region::EuWest1;
@@ -322,16 +317,15 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    #[test]
-    fn test_get_bucket_location_ok_null() {
+    #[tokio::test]
+    async fn test_get_bucket_location_ok_null() {
         let client = mock_client(
             Some("s3-get-bucket-location-null.xml"),
             ObjectVersions::Current,
         );
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::get_bucket_location(&client, "test-bucket"))
+        let ret = Client::get_bucket_location(&client, "test-bucket")
+            .await
             .unwrap();
 
         let expected = Region::UsEast1;
@@ -339,17 +333,14 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    #[test]
-    fn test_list_buckets() {
+    #[tokio::test]
+    async fn test_list_buckets() {
         let client = mock_client(
             Some("s3-list-buckets.xml"),
             ObjectVersions::Current,
         );
 
-        let mut ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::list_buckets(&client))
-            .unwrap();
+        let mut ret = Client::list_buckets(&client).await.unwrap();
         ret.sort();
 
         let expected: Vec<String> = vec![
@@ -360,16 +351,15 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    #[test]
-    fn test_size_objects_current() {
+    #[tokio::test]
+    async fn test_size_objects_current() {
         let mut client = mock_client(
             Some("s3-list-objects.xml"),
             ObjectVersions::Current,
         );
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::size_objects(&mut client, "test-bucket"))
+        let ret = Client::size_objects(&mut client, "test-bucket")
+            .await
             .unwrap();
 
         let expected = 33_792;
@@ -377,8 +367,8 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    #[test]
-    fn test_size_objects_all_noncurrent() {
+    #[tokio::test]
+    async fn test_size_objects_all_noncurrent() {
         // Current expects 0 here because our mock client won't return any
         // objects. This is handled in another test.
         let tests = vec![
@@ -396,9 +386,8 @@ mod tests {
                 versions,
             );
 
-            let ret = Runtime::new()
-                .unwrap()
-                .block_on(Client::size_objects(&mut client, "test-bucket"))
+            let ret = Client::size_objects(&mut client, "test-bucket")
+                .await
                 .unwrap();
 
             assert_eq!(ret, expected_size);

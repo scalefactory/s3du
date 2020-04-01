@@ -81,7 +81,6 @@ mod tests {
         ReadMockResponse,
     };
     use rusoto_s3::S3Client;
-    use tokio::runtime::Runtime;
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
@@ -110,9 +109,9 @@ mod tests {
 
     // This test is currently ignored as we cannot easily mock multiple
     // requests at the moment. Issues #1671 and PR #1685 should solve this.
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_buckets() {
+    async fn test_buckets() {
         let expected = vec![
             "a-bucket-name",
             "another-bucket-name",
@@ -123,10 +122,7 @@ mod tests {
             ObjectVersions::Current,
         );
 
-        let buckets = Runtime::new()
-            .unwrap()
-            .block_on(Client::buckets(&mut client))
-            .unwrap();
+        let buckets = Client::buckets(&mut client).await.unwrap();
 
         let mut buckets: Vec<String> = buckets.iter()
             .map(|b| b.name.to_owned())
@@ -137,8 +133,8 @@ mod tests {
         assert_eq!(buckets, expected);
     }
 
-    #[test]
-    fn test_bucket_size() {
+    #[tokio::test]
+    async fn test_bucket_size() {
         let client = mock_client(
             Some("s3-list-objects.xml"),
             ObjectVersions::Current,
@@ -150,10 +146,7 @@ mod tests {
             storage_types: None,
         };
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::bucket_size(&client, &bucket))
-            .unwrap();
+        let ret = Client::bucket_size(&client, &bucket).await.unwrap();
 
         let expected = 33792;
 
