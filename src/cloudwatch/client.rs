@@ -78,8 +78,8 @@ impl Client {
                 ];
 
                 GetMetricStatisticsInput {
-                    dimensions: Some(dimensions),
-                    end_time:   self.iso8601(now),
+                    dimensions : Some(dimensions),
+                    end_time:    self.iso8601(now),
                     metric_name: "BucketSizeBytes".into(),
                     namespace:   "AWS/S3".into(),
                     period:      one_day.num_seconds(),
