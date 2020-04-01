@@ -22,6 +22,8 @@ impl BucketSizer for Client {
     /// We also cache the returned metrics here, since we need to reference this
     /// elsewhere, and we don't want to have to query for it again.
     async fn buckets(&mut self) -> Result<Buckets> {
+        debug!("buckets: Listing...");
+
         let metrics: BucketMetrics = self.list_metrics().await?.into();
 
         let mut buckets = Buckets::new();

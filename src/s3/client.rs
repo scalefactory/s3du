@@ -106,6 +106,8 @@ impl Client {
     /// This will be used when the size of `All` or `NonCurrent` objects is
     /// requested.
     async fn size_object_versions(&self, bucket: &str) -> Result<usize> {
+        debug!("size_object_versions for '{}'", bucket);
+
         let mut next_key_marker        = None;
         let mut next_version_id_marker = None;
         let mut size                   = 0;
@@ -178,6 +180,8 @@ impl Client {
     ///
     /// This will be used when the size of `Current` objects is requested.
     async fn size_current_objects(&self, bucket: &str) -> Result<usize> {
+        debug!("size_current_objects for '{}'", bucket);
+
         let mut continuation_token = None;
         let mut size               = 0;
 
@@ -217,6 +221,8 @@ impl Client {
     /// A wrapper to call the appropriate bucket sizing function depending on
     /// the `ObjectVersions` configuration the `Client` was created with.
     pub async fn size_objects(&self, bucket: &str) -> Result<usize> {
+        debug!("size_objects: '{}' with {:?}", bucket, self.object_versions);
+
         match self.object_versions {
             ObjectVersions::All => {
                 self.size_object_versions(bucket).await

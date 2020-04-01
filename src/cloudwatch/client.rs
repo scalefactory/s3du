@@ -35,10 +35,7 @@ impl Client {
         let bucket_name = config.bucket_name;
         let region      = config.region;
 
-        debug!(
-            "new: Creating CloudWatchClient in region '{}'",
-            region.name(),
-        );
+        debug!("new: Creating CloudWatchClient in region '{}'", region.name());
 
         let client = CloudWatchClient::new(region);
 
@@ -56,6 +53,8 @@ impl Client {
         &self,
         bucket: &Bucket,
     ) -> Result<Vec<GetMetricStatisticsOutput>> {
+        debug!("get_metric_statistics: Processing {:?}", bucket);
+
         let now: DateTime<Utc> = Utc::now();
         let one_day            = Duration::days(1);
 
@@ -78,7 +77,7 @@ impl Client {
                 ];
 
                 GetMetricStatisticsInput {
-                    dimensions : Some(dimensions),
+                    dimensions:  Some(dimensions),
                     end_time:    self.iso8601(now),
                     metric_name: "BucketSizeBytes".into(),
                     namespace:   "AWS/S3".into(),

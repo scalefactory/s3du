@@ -19,17 +19,23 @@ impl BucketSizer for Client {
     ///   - The `bucket` argument provided on the command line
     ///   - The `Region`, ensuring it's in our currently selected `--region`
     async fn buckets(&mut self) -> Result<Buckets> {
+        debug!("buckets: Listing...");
+
         let mut bucket_names = self.list_buckets().await?;
 
         // If we were provided with a specific bucket name on the CLI, filter
         // out buckets that don't match.
         if let Some(bucket_name) = self.bucket_name.as_ref() {
+            debug!("Filtering bucket list for '{}'", bucket_name);
+
             bucket_names.retain(|b| b == bucket_name);
         }
 
         let mut buckets = Buckets::new();
 
         for bucket in &bucket_names {
+            debug!("Retrieving location for '{}'", bucket);
+
             let region = self.get_bucket_location(&bucket).await?;
 
             // We can only ListBucket for the region our S3 client is in, so
@@ -52,16 +58,11 @@ impl BucketSizer for Client {
 
     /// Return the size of `bucket`.
     async fn bucket_size(&self, bucket: &Bucket) -> Result<usize> {
-        let name = &bucket.name;
-        debug!("bucket_size: Calculating size for '{}'", name);
+        debug!("bucket_size: Calculating size for '{}'", bucket.name);
 
-        let size = self.size_objects(name).await?;
+        let size = self.size_objects(&bucket.name).await?;
 
-        debug!(
-            "bucket_size: Calculated bucket size for '{}' is '{}'",
-            name,
-            size,
-        );
+        debug!("bucket_size: size for '{}' is '{}'", bucket.name, size);
 
         Ok(size)
     }

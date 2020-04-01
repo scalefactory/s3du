@@ -42,6 +42,8 @@ impl BucketMetrics {
 /// Conversion from a `Vec<Metric>` as returned by AWS to our `BucketMetrics`.
 impl From<Vec<Metric>> for BucketMetrics {
     fn from(metrics: Vec<Metric>) -> Self {
+        debug!("From: Vec<Metric> for BucketMetrics");
+
         let mut bucket_metrics = HashMap::new();
 
         for metric in metrics {

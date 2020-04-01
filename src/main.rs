@@ -59,6 +59,8 @@ fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
 
 /// Return `size` as a human friendly size if requested by `SizeUnit`.
 fn humansize(size: usize, unit: &SizeUnit) -> String {
+    debug!("humansize: size {}, unit {:?}", size, unit);
+
     match unit {
         SizeUnit::Binary(unit)  => size.file_size(unit).unwrap(),
         SizeUnit::Bytes         => size.to_string(),
@@ -71,7 +73,7 @@ async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
     // List all of our buckets
     let buckets = client.buckets().await?;
 
-    debug!("main: Got buckets: {:?}", buckets);
+    debug!("du: Got buckets: {:?}", buckets);
 
     // Track total size of all buckets.
     let mut total_size: usize = 0;
@@ -127,6 +129,8 @@ fn main() -> Result<()> {
         ..Default::default()
     };
 
+    // If have s3 mode available we also need to pull in the ObjectVersions
+    // from the command line.
     #[cfg(feature = "s3")]
     {
         if config.mode == ClientMode::S3 {
