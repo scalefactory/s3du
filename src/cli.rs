@@ -57,9 +57,9 @@ const VALID_SIZE_UNITS: &[&str] = &[
 ];
 
 // This should match the ObjectVersions in the common.rs
-/// Valid S3 object versions for the `--s3-object-versions` switch.
+/// Valid S3 object versions for the `--object-versions` switch.
 #[cfg(feature = "s3")]
-const S3_OBJECT_VERSIONS: &[&str] = &[
+const OBJECT_VERSIONS: &[&str] = &[
     "all",
     "current",
     "non-current",
@@ -187,13 +187,13 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
         Arg::with_name("OBJECT_VERSIONS")
             .env("S3DU_OBJECT_VERSIONS")
             .hide_env_values(true)
-            .long("s3-object-versions")
+            .long("object-versions")
             .short("o")
             .value_name("VERSIONS")
             .help("Set which object versions to sum in S3 mode")
             .takes_value(true)
             .default_value(DEFAULT_OBJECT_VERSIONS)
-            .possible_values(S3_OBJECT_VERSIONS)
+            .possible_values(OBJECT_VERSIONS)
     );
 
     app

@@ -66,7 +66,7 @@ one of 3 ways:
     is the default.
   - NonCurrent: Show bucket size as the sum of all non-current object versions.
 
-These can be selected via the `--s3-object-versions` CLI flag if `s3du` was
+These can be selected via the `--object-versions` CLI flag if `s3du` was
 compiled with the `s3` feature.
 
 ## IAM Policies

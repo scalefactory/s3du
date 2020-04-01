@@ -45,7 +45,7 @@ mode is cheaper at the cost of some accuracy while
 mode is more expensive but very accurate.
 Defaults to
 .Dq Cm cloudwatch .
-.It Fl o Ar versions , Fl Fl s3-object-versions Ns = Ns Ar versions
+.It Fl o Ar versions , Fl Fl object-versions Ns = Ns Ar versions
 Specifies which object versions to sum the size of in
 .Cm s3
 mode.
@@ -58,7 +58,7 @@ This flag will only be present if
 .Nm
 was compiled with the
 .Dq Cm s3
-feature.
+feature, and only affects the S3 mode.
 Defaults to
 .Dq Cm current .
 .It Fl r Ar region , Fl Fl region Ns = Ns Ar region
@@ -96,7 +96,7 @@ specified, the command line arguments will win.
 .It Ev AWS_REGION
 is equivalent to setting the
 .Fl Fl region
-argument.
+option.
 .It Ev S3DU_BUCKET
 is equivalent to setting the
 .Ar bucket
@@ -104,11 +104,11 @@ argument.
 .It Ev S3DU_MODE
 is equivalent to setting the
 .Fl Fl mode
-argument.
+option.
 .It Ev S3DU_OBJECT_VERSIONS
 is equivalent to setting the
-.Fl Fl s3-object-versions
-argument.
+.Fl Fl object-versions
+option.
 This environment variable will only be present if
 .Nm
 has been compiled with the
@@ -117,7 +117,7 @@ feature.
 .It Ev S3DU_UNIT
 is equivalent to setting the
 .Fl Fl unit
-argument.
+option.
 .El
 .Sh FILES
 .Bl -tag -width /usr/local/bin/s3du -compact
@@ -141,7 +141,7 @@ Show a specific bucket size via CloudWatch in a non-default region:
 .Pp
 Show a specific bucket via S3 showing the size of only non-current objects:
 .Pp
-.Dl $ s3du --mode=s3 --s3-object-versions=non-current my-bucket
+.Dl $ s3du --mode=s3 --object-versions=non-current my-bucket
 .Sh HISTORY
 .Nm
 was started around the beginning of 2020 and became feature complete around
