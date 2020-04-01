@@ -193,7 +193,6 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
-    use tokio::runtime::Runtime;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
@@ -217,8 +216,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_get_metric_statistics() {
+    #[tokio::test]
+    async fn test_get_metric_statistics() {
         let client = mock_client(
             Some("cloudwatch-get-metric-statistics.xml"),
         );
@@ -233,9 +232,8 @@ mod tests {
             storage_types: Some(storage_types),
         };
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::get_metric_statistics(&client, &bucket))
+        let ret = Client::get_metric_statistics(&client, &bucket)
+            .await
             .unwrap();
 
         let datapoints = vec![
@@ -268,16 +266,13 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    #[test]
-    fn test_list_metrics() {
+    #[tokio::test]
+    async fn test_list_metrics() {
         let mut client = mock_client(
             Some("cloudwatch-list-metrics.xml"),
         );
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::list_metrics(&mut client))
-            .unwrap();
+        let ret = Client::list_metrics(&mut client).await.unwrap();
 
         let expected = vec![
             Metric {

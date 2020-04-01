@@ -119,7 +119,6 @@ mod tests {
         MockResponseReader,
         ReadMockResponse,
     };
-    use tokio::runtime::Runtime;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
@@ -143,8 +142,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_buckets() {
+    #[tokio::test]
+    async fn test_buckets() {
         let expected = vec![
             "a-bucket-name",
             "another-bucket-name",
@@ -154,10 +153,7 @@ mod tests {
             Some("cloudwatch-list-metrics.xml"),
         );
 
-        let buckets = Runtime::new()
-            .unwrap()
-            .block_on(Client::buckets(&mut client))
-            .unwrap();
+        let buckets = Client::buckets(&mut client).await.unwrap();
 
         let mut buckets: Vec<String> = buckets.iter()
             .map(|b| b.name.to_owned())
@@ -168,8 +164,8 @@ mod tests {
         assert_eq!(buckets, expected);
     }
 
-    #[test]
-    fn test_bucket_size() {
+    #[tokio::test]
+    async fn test_bucket_size() {
         let client = mock_client(
             Some("cloudwatch-get-metric-statistics.xml"),
         );
@@ -184,10 +180,7 @@ mod tests {
             storage_types: Some(storage_types),
         };
 
-        let ret = Runtime::new()
-            .unwrap()
-            .block_on(Client::bucket_size(&client, &bucket))
-            .unwrap();
+        let ret = Client::bucket_size(&client, &bucket).await.unwrap();
 
         let expected = 123456789;
 
