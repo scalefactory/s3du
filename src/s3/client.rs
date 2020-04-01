@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::common::{
     BucketNames,
     ClientConfig,
-    S3ObjectVersions,
+    ObjectVersions,
 };
 use log::debug;
 use rusoto_core::Region;
@@ -27,7 +27,7 @@ pub struct Client {
     pub bucket_name: Option<String>,
 
     /// Configuration for which objects to list in the bucket.
-    pub object_versions: S3ObjectVersions,
+    pub object_versions: ObjectVersions,
 
     /// `Region` that we're listing buckets in.
     pub region: Region,
@@ -49,7 +49,7 @@ impl Client {
         Client {
             client:          client,
             bucket_name:     bucket_name,
-            object_versions: config.s3_object_versions,
+            object_versions: config.object_versions,
             region:          region,
         }
     }
@@ -101,7 +101,7 @@ impl Client {
         Ok(location)
     }
 
-    /// List object versions and filter according to `S3ObjectVersions`.
+    /// List object versions and filter according to `ObjectVersions`.
     ///
     /// This will be used when the size of `All` or `NonCurrent` objects is
     /// requested.
@@ -135,8 +135,8 @@ impl Client {
                         let is_latest = v.is_latest.unwrap();
 
                         match self.object_versions {
-                            S3ObjectVersions::All     => v.size,
-                            S3ObjectVersions::Current => {
+                            ObjectVersions::All     => v.size,
+                            ObjectVersions::Current => {
                                 if is_latest {
                                     v.size
                                 }
@@ -144,7 +144,7 @@ impl Client {
                                     None
                                 }
                             },
-                            S3ObjectVersions::NonCurrent => {
+                            ObjectVersions::NonCurrent => {
                                 if is_latest {
                                     None
                                 }
@@ -215,16 +215,16 @@ impl Client {
     }
 
     /// A wrapper to call the appropriate bucket sizing function depending on
-    /// the `S3ObjectVersions` configuration the `Client` was created with.
+    /// the `ObjectVersions` configuration the `Client` was created with.
     pub async fn size_objects(&self, bucket: &str) -> Result<usize> {
         match self.object_versions {
-            S3ObjectVersions::All => {
+            ObjectVersions::All => {
                 self.size_object_versions(bucket).await
             },
-            S3ObjectVersions::Current => {
+            ObjectVersions::Current => {
                 self.size_current_objects(bucket).await
             },
-            S3ObjectVersions::NonCurrent => {
+            ObjectVersions::NonCurrent => {
                 self.size_object_versions(bucket).await
             },
         }
@@ -247,7 +247,7 @@ mod tests {
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
-        versions:  S3ObjectVersions,
+        versions:  ObjectVersions,
     ) -> Client {
         let data = match data_file {
             None    => "".to_string(),
@@ -272,7 +272,7 @@ mod tests {
     fn test_get_bucket_location_err() {
         let client = mock_client(
             Some("s3-get-bucket-location-invalid.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let ret = Runtime::new()
@@ -286,7 +286,7 @@ mod tests {
     fn test_get_bucket_location_ok() {
         let client = mock_client(
             Some("s3-get-bucket-location.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let ret = Runtime::new()
@@ -303,7 +303,7 @@ mod tests {
     fn test_get_bucket_location_ok_eu() {
         let client = mock_client(
             Some("s3-get-bucket-location-eu.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let ret = Runtime::new()
@@ -320,7 +320,7 @@ mod tests {
     fn test_get_bucket_location_ok_null() {
         let client = mock_client(
             Some("s3-get-bucket-location-null.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let ret = Runtime::new()
@@ -337,7 +337,7 @@ mod tests {
     fn test_list_buckets() {
         let client = mock_client(
             Some("s3-list-buckets.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let mut ret = Runtime::new()
@@ -358,7 +358,7 @@ mod tests {
     fn test_size_objects_current() {
         let mut client = mock_client(
             Some("s3-list-objects.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let ret = Runtime::new()
@@ -376,9 +376,9 @@ mod tests {
         // Current expects 0 here because our mock client won't return any
         // objects. This is handled in another test.
         let tests = vec![
-            (S3ObjectVersions::All,        600_732),
-            (S3ObjectVersions::Current,    0),
-            (S3ObjectVersions::NonCurrent, 166_498),
+            (ObjectVersions::All,        600_732),
+            (ObjectVersions::Current,    0),
+            (ObjectVersions::NonCurrent, 166_498),
         ];
 
         for test in tests {

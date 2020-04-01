@@ -26,7 +26,7 @@ use common::{
 };
 
 #[cfg(feature = "s3")]
-use common::S3ObjectVersions;
+use common::ObjectVersions;
 
 /// CloudWatch Client.
 #[cfg(feature = "cloudwatch")]
@@ -134,9 +134,9 @@ fn main() -> Result<()> {
             let versions = matches.value_of("OBJECT_VERSIONS").unwrap();
 
             // This should be safe, due to validation of the above.
-            let versions = S3ObjectVersions::from_str(versions).unwrap();
+            let versions = ObjectVersions::from_str(versions).unwrap();
 
-            config.s3_object_versions = versions;
+            config.object_versions = versions;
         }
     }
 

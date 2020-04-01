@@ -5,7 +5,7 @@ use rusoto_core::Region;
 use super::ClientMode;
 
 #[cfg(feature = "s3")]
-use super::S3ObjectVersions;
+use super::ObjectVersions;
 
 /// Client configuration.
 #[derive(Debug)]
@@ -32,7 +32,7 @@ pub struct ClientConfig {
     /// This only has an effect when running in S3 mode and the field will only
     /// be present when compiled with the `s3` feature.
     #[cfg(feature = "s3")]
-    pub s3_object_versions: S3ObjectVersions,
+    pub object_versions: ObjectVersions,
 }
 
 impl Default for ClientConfig {
@@ -41,15 +41,15 @@ impl Default for ClientConfig {
     /// If compiled with the `cloudwatch` feature, `CloudWatch` will be the
     /// default `ClientMode`, otherwise `S3` will be the default.
     ///
-    /// If compiled without the `s3` feature, the `s3_object_versions` field
+    /// If compiled without the `s3` feature, the `object_versions` field
     /// will be absent.
     ///
     /// ```rust
     /// ClientConfig {
-    ///     bucket_name:        None,
-    ///     mode:               ClientMode::CloudWatch,
-    ///     region:             Region::UsEast1,
-    ///     s3_object_versions: S3ObjectVersions::Current,
+    ///     bucket_name:     None,
+    ///     mode:            ClientMode::CloudWatch,
+    ///     region:          Region::UsEast1,
+    ///     object_versions: ObjectVersions::Current,
     /// }
     /// ```
     fn default() -> Self {
@@ -64,7 +64,7 @@ impl Default for ClientConfig {
             mode:        mode,
             region:      Region::UsEast1,
             #[cfg(feature = "s3")]
-            s3_object_versions: S3ObjectVersions::Current,
+            object_versions: ObjectVersions::Current,
         }
     }
 }

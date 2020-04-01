@@ -17,11 +17,10 @@ mod client_mode;
 /// `SizeUnit` enum is used to select how the bucket sizes will be output.
 mod size_unit;
 
-
-/// `S3ObjectVersions` selects which S3 objects will be used when summing the
+/// `ObjectVersions` selects which S3 objects will be used when summing the
 /// size of the buckets.
 #[cfg(feature = "s3")]
-mod s3_object_versions;
+mod object_versions;
 
 pub use bucket::*;
 pub use bucket_sizer::*;
@@ -30,7 +29,7 @@ pub use client_mode::*;
 pub use size_unit::*;
 
 #[cfg(feature = "s3")]
-pub use s3_object_versions::*;
+pub use object_versions::*;
 
 /// `BucketNames` is a convenience type used by both the CloudWatch and S3
 /// clients.

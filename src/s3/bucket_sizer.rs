@@ -70,7 +70,7 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::S3ObjectVersions;
+    use crate::common::ObjectVersions;
     use pretty_assertions::assert_eq;
     use rusoto_core::Region;
     use rusoto_mock::{
@@ -86,7 +86,7 @@ mod tests {
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
-        versions:  S3ObjectVersions,
+        versions:  ObjectVersions,
     ) -> Client {
         let data = match data_file {
             None    => "".to_string(),
@@ -117,7 +117,7 @@ mod tests {
 
         let mut client = mock_client(
             Some("s3-list-buckets.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let buckets = Runtime::new()
@@ -138,7 +138,7 @@ mod tests {
     fn test_bucket_size() {
         let client = mock_client(
             Some("s3-list-objects.xml"),
-            S3ObjectVersions::Current,
+            ObjectVersions::Current,
         );
 
         let bucket = Bucket {
