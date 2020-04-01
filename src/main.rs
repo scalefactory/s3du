@@ -73,13 +73,25 @@ async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
 
     debug!("main: Got buckets: {:?}", buckets);
 
+    // Track total size of all buckets.
+    let mut total_size: usize = 0;
+
     // For each bucket name, get the size
     for bucket in buckets {
         let size = client.bucket_size(&bucket).await?;
+
+        total_size += size;
+
         let size = humansize(size, &unit);
 
         println!("{size}\t{bucket}", size=size, bucket=bucket.name);
     }
+
+    let total_size = humansize(total_size, &unit);
+
+    // Display the total size the same way du(1) would, the total size followed
+    // by a `.`.
+    println!("{size}\t.", size=total_size);
 
     Ok(())
 }
