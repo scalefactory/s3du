@@ -107,7 +107,7 @@ CloudWatch `GetMetricStatistics` and `ListMetrics` APIs.
 ### S3 IAM Policy
 
 This policy will enforce HTTPS use and will allow `s3du` access to the AWS S3
-`ListAllMyBuckets` and `ListBucket` APIs.
+`GetBucketLocation`, `ListAllMyBuckets`, and `ListBucket` APIs.
 
 ```json
 {
@@ -117,6 +117,7 @@ This policy will enforce HTTPS use and will allow `s3du` access to the AWS S3
             "Sid": "s3du-s3",
             "Effect": "Allow",
             "Action": [
+                "s3:GetBucketLocation",
                 "s3:ListAllMyBuckets",
                 "s3:ListBucket"
             ],
