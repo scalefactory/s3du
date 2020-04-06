@@ -15,7 +15,7 @@ use super::{
 #[async_trait]
 pub trait BucketSizer {
     /// Returns a list of bucket names.
-    async fn buckets(&mut self) -> Result<Buckets>;
+    async fn buckets(&self) -> Result<Buckets>;
 
     /// Returns the size of the given `bucket` in bytes.
     async fn bucket_size(&self, bucket: &Bucket) -> Result<usize>;

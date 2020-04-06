@@ -18,7 +18,7 @@ impl BucketSizer for Client {
     /// This list of buckets will also be filtered by the following:
     ///   - The `bucket` argument provided on the command line
     ///   - The `Region`, ensuring it's in our currently selected `--region`
-    async fn buckets(&mut self) -> Result<Buckets> {
+    async fn buckets(&self) -> Result<Buckets> {
         debug!("buckets: Listing...");
 
         let mut bucket_names = self.list_buckets().await?;

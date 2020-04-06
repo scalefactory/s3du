@@ -21,7 +21,7 @@ impl BucketSizer for Client {
     /// Return a list of S3 bucket names from CloudWatch.
     /// We also cache the returned metrics here, since we need to reference this
     /// elsewhere, and we don't want to have to query for it again.
-    async fn buckets(&mut self) -> Result<Buckets> {
+    async fn buckets(&self) -> Result<Buckets> {
         debug!("buckets: Listing...");
 
         let metrics: BucketMetrics = self.list_metrics().await?.into();
