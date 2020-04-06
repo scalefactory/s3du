@@ -14,6 +14,9 @@ mod client_config;
 /// `ClientMode` enum is used to select which `Client` will be used.
 mod client_mode;
 
+/// `HumanSize` trait for `usize` used to output friendly bucket sizes.
+mod human_size;
+
 /// `SizeUnit` enum is used to select how the bucket sizes will be output.
 mod size_unit;
 
@@ -26,6 +29,7 @@ pub use bucket::*;
 pub use bucket_sizer::*;
 pub use client_config::*;
 pub use client_mode::*;
+pub use human_size::*;
 pub use size_unit::*;
 
 #[cfg(feature = "s3")]
