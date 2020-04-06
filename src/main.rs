@@ -4,7 +4,6 @@
 #![allow(clippy::redundant_field_names)]
 use anyhow::Result;
 use clap::value_t;
-use humansize::FileSize;
 use log::{
     debug,
     info,
@@ -22,6 +21,7 @@ use common::{
     BucketSizer,
     ClientConfig,
     ClientMode,
+    HumanSize,
     SizeUnit,
 };
 
@@ -36,66 +36,63 @@ mod cloudwatch;
 #[cfg(feature = "s3")]
 mod s3;
 
-/// Return the appropriate AWS client with the given `ClientConfig`.
-fn client(config: ClientConfig) -> Box<dyn BucketSizer> {
-    let mode   = &config.mode;
-    let region = &config.region;
+/// `Client` struct wraps a `Box<dyn BucketSizer>`.
+struct Client(Box<dyn BucketSizer>);
 
-    info!("Fetching client in region {} for mode {:?}", region.name(), mode);
+/// `Client` implementation.
+impl Client {
+    /// Return the appropriate AWS client with the given `ClientConfig`.
+    fn new(config: ClientConfig) -> Self {
+        let mode   = &config.mode;
+        let region = &config.region;
 
-    match mode {
-        #[cfg(feature = "cloudwatch")]
-        ClientMode::CloudWatch => {
-            let client = cloudwatch::Client::new(config);
-            Box::new(client)
-        },
-        #[cfg(feature = "s3")]
-        ClientMode::S3 => {
-            let client = s3::Client::new(config);
-            Box::new(client)
-        },
-    }
-}
+        info!("Fetching client in region {} for mode {:?}", region.name(), mode);
 
-/// Return `size` as a human friendly size if requested by `SizeUnit`.
-fn humansize(size: usize, unit: &SizeUnit) -> String {
-    debug!("humansize: size {}, unit {:?}", size, unit);
+        let client: Box<dyn BucketSizer> = match mode {
+            #[cfg(feature = "cloudwatch")]
+            ClientMode::CloudWatch => {
+                let client = cloudwatch::Client::new(config);
+                Box::new(client)
+            },
+            #[cfg(feature = "s3")]
+            ClientMode::S3 => {
+                let client = s3::Client::new(config);
+                Box::new(client)
+            },
+        };
 
-    match unit {
-        SizeUnit::Binary(unit)  => size.file_size(unit).unwrap(),
-        SizeUnit::Bytes         => size.to_string(),
-        SizeUnit::Decimal(unit) => size.file_size(unit).unwrap(),
-    }
-}
-
-/// Perform the actual get and output of the bucket sizes.
-async fn du(mut client: Box<dyn BucketSizer>, unit: SizeUnit) -> Result<()> {
-    // List all of our buckets
-    let buckets = client.buckets().await?;
-
-    debug!("du: Got buckets: {:?}", buckets);
-
-    // Track total size of all buckets.
-    let mut total_size: usize = 0;
-
-    // For each bucket name, get the size
-    for bucket in buckets {
-        let size = client.bucket_size(&bucket).await?;
-
-        total_size += size;
-
-        let size = humansize(size, &unit);
-
-        println!("{size}\t{bucket}", size=size, bucket=bucket.name);
+        Client(client)
     }
 
-    let total_size = humansize(total_size, &unit);
+    /// Perform the actual get and output of the bucket sizes.
+    async fn du(&self, unit: SizeUnit) -> Result<()> {
+        // List all of our buckets
+        let buckets = self.0.buckets().await?;
 
-    // Display the total size the same way du(1) would, the total size followed
-    // by a `.`.
-    println!("{size}\t.", size=total_size);
+        debug!("du: Got buckets: {:?}", buckets);
 
-    Ok(())
+        // Track total size of all buckets.
+        let mut total_size: usize = 0;
+
+        // For each bucket name, get the size
+        for bucket in buckets {
+            let size = self.0.bucket_size(&bucket).await?;
+
+            total_size += size;
+
+            let size = size.humansize(&unit);
+
+            println!("{size}\t{bucket}", size=size, bucket=bucket.name);
+        }
+
+        let total_size = total_size.humansize(&unit);
+
+        // Display the total size the same way du(1) would, the total size followed
+        // by a `.`.
+        println!("{size}\t.", size=total_size);
+
+        Ok(())
+    }
 }
 
 /// Entry point
@@ -145,7 +142,7 @@ fn main() -> Result<()> {
     }
 
     // The region here will come from CLI args in the future
-    let client = client(config);
+    let client = Client::new(config);
 
-    Runtime::new()?.block_on(du(client, unit))
+    Runtime::new()?.block_on(client.du(unit))
 }
