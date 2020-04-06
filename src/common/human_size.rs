@@ -1,9 +1,9 @@
 // HumanSize trait and implementations
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use crate::common::SizeUnit;
 use humansize::FileSize;
 use log::debug;
+use super::SizeUnit;
 
 /// `HumanSize` trait.
 pub trait HumanSize {
