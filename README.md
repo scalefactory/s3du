@@ -75,6 +75,14 @@ In order to enable use of `s3du`, your IAM user or role will need one or both
 of the following IAM policies attached, depending on which `s3du` modes you
 wish to use.
 
+Full examples of these policies are provided as:
+
+  - A CloudFormation template
+  - IAM policy JSON files
+  - A Terraform module
+
+Under the `aws` directory of the source repository.
+
 ### CloudWatch IAM Policy
 
 This policy will enforce HTTPS use and will allow `s3du` access to the AWS
