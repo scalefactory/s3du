@@ -1,13 +1,13 @@
 // Handles the CloudWatch bucket metrics
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use crate::common::BucketNames;
+use crate::common::{
+    BucketNames,
+    StorageTypes,
+};
 use log::debug;
 use rusoto_cloudwatch::Metric;
 use std::collections::HashMap;
-
-/// Convenience type for our returned storage types
-type StorageTypes = Vec<String>;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
 // are used within the bucket.

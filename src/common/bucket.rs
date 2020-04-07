@@ -3,6 +3,9 @@
 #![deny(missing_docs)]
 use rusoto_core::Region;
 
+/// Convenience type for a list of storage types
+pub type StorageTypes = Vec<String>;
+
 /// Represents an S3 bucket.
 ///
 /// This will always have a `name`.
@@ -19,7 +22,7 @@ pub struct Bucket {
     /// The storage types the bucket is using.
     ///
     /// This will currently only be used in CloudWatch mode.
-    pub storage_types: Option<Vec<String>>,
+    pub storage_types: Option<StorageTypes>,
 }
 
 /// Convenience type for a list of `Bucket`.
