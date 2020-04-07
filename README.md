@@ -1,14 +1,16 @@
 # s3du
 
 `s3du` is a tool which lets you know how much space your [AWS S3] buckets are
-using according to [AWS CloudWatch].
+using according to either [AWS CloudWatch] or AWS S3.
 
-Because `s3du` uses CloudWatch to obtain the bucket size, this means that there
-could be up to a 24 hour latency on the reported size, vs. the actual size.
-This is because CloudWatch is only updated with S3 bucket sizes [once per day].
+The CloudWatch mode is the cheapest, but least accurate option for getting the
+bucket sizes. It is less accurate because there is up to a 24 hour delay on the
+real bucket size vs. the size in CloudWatch as CloudWatch is only updated with
+S3 bucket sizes [once per day].
 
-In the future, an alternate mode to iterate over objects in a bucket and sum
-the sizes may become available.
+The S3 mode is the most accurate but more expensive mode of operation. In this
+mode all of the objects in each discovered bucket are listed and their sizes
+summed.
 
 ## Usage
 
@@ -33,7 +35,16 @@ env AWS_REGION=eu-west-1 s3du
 
 # Overriding the default AWS region with a CLI arg
 s3du --region=eu-central-1
+
+# Listing all buckets in S3 mode
+s3du --mode=s3
+
+# Listing a specific bucket's non-current object versions in S3 mode
+s3du --mode=s3 --object-versions=non-current my-bucket
 ```
+
+More information on running `s3du` can be found in the man page or via
+`s3du --help`.
 
 ## Features
 
