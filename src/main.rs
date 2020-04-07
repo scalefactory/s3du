@@ -46,7 +46,7 @@ impl Client {
         let mode   = &config.mode;
         let region = &config.region;
 
-        info!("Fetching client in region {} for mode {:?}", region.name(), mode);
+        info!("Client in region {} for mode {:?}", region.name(), mode);
 
         let client: Box<dyn BucketSizer> = match mode {
             #[cfg(feature = "cloudwatch")]
@@ -87,8 +87,8 @@ impl Client {
 
         let total_size = total_size.humansize(&unit);
 
-        // Display the total size the same way du(1) would, the total size followed
-        // by a `.`.
+        // Display the total size the same way du(1) would, the total size
+        // followed by a `.`.
         println!("{size}\t.", size=total_size);
 
         Ok(())
