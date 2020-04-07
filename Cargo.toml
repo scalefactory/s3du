@@ -16,6 +16,10 @@ keywords = [
     "cli",
     "s3",
 ]
+exclude = [
+    ".gitignore",
+    ".github",
+]
 
 [features]
 # Build with both CloudWatch and S3 support by default
