@@ -1,9 +1,21 @@
 [package]
 name = "s3du"
+description = "Command line utility for showing space used in AWS S3 buckets"
 version = "1.0.0"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/phyber/s3du"
+categories = [
+    "command-line-utilities",
+    "filesystem",
+]
+keywords = [
+    "aws",
+    "cli",
+    "s3",
+]
 
 [features]
 # Build with both CloudWatch and S3 support by default
