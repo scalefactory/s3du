@@ -12,6 +12,10 @@ The S3 mode is the most accurate but more expensive mode of operation. In this
 mode all of the objects in each discovered bucket are listed and their sizes
 summed.
 
+## Installation
+
+`s3du` can be installed by running `cargo install s3du`.
+
 ## Usage
 
 `s3du` uses the default [AWS credentials] chain. As long as your AWS
