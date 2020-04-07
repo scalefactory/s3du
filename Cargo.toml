@@ -1,6 +1,6 @@
 [package]
 name = "s3du"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
