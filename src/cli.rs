@@ -12,7 +12,6 @@ use clap::{
 };
 use log::debug;
 use rusoto_core::Region;
-use std::net::Ipv4Addr;
 use std::str::FromStr;
 
 // This catches cases where we've compiled with either:
@@ -79,10 +78,8 @@ fn is_valid_aws_region(s: String) -> Result<(), String> {
 /// Ensures that a given bucket name is valid.
 ///
 /// This validation is taken from
-/// https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html,
-/// specifically, the new standard.
-/// This prevents us from sending API calls to AWS which will never be
-/// serviced.
+/// https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html.
+/// We validate based on the legacy standard for compatibility.
 fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
     // Bucket name cannot be empty
     if s.is_empty() {
@@ -95,33 +92,8 @@ fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
     }
 
     // and no more than 63 characters long.
-    if s.len() > 63 {
+    if s.len() > 255 {
         return Err("Bucket name is too long".into());
-    }
-
-    // Bucket names must not contain uppercase characters...
-    for ch in s.chars() {
-        if ch.is_uppercase() {
-            return Err("Bucket names cannot contain uppercase chars".into());
-        }
-    }
-
-    // or underscores.
-    if s.contains("_") {
-        return Err("Bucket names cannot contain underscores".into());
-    }
-
-    // Bucketnames must start with a lowercase letter or number
-    // Unwrap should be safe here, we know we have a string > 0 characters.
-    let ch = s.chars().nth(0).unwrap();
-    if (!ch.is_ascii_lowercase() && !ch.is_ascii_alphanumeric()) || !ch.is_ascii_alphanumeric() {
-        return Err("Bucket names must start with a lowercase char or number".into());
-    }
-
-    // Bucket names must not be formatted as an IP address (for example,
-    // 192.168.5.4).
-    if Ipv4Addr::from_str(&s).is_ok() {
-        return Err("Bucket names cannot be formatted as an IP address".into());
     }
 
     Ok(())
@@ -235,18 +207,18 @@ mod tests {
 
     #[test]
     fn test_is_valid_aws_s3_bucket_name() {
-        let long_valid   = "a".repeat(63);
-        let long_invalid = "a".repeat(64);
+        let long_valid   = "a".repeat(65);
+        let long_invalid = "a".repeat(256);
 
         let tests = vec![
-            ("192.168.5.4",  false),
+            ("192.168.5.4",  true),
             ("no",           false),
-            ("oh_no",        false),
+            ("oh_no",        true),
             ("th1s-1s-f1n3", true),
             ("valid",        true),
             ("yes",          true),
-            ("Invalid",      false),
-            ("-invalid",     false),
+            ("Invalid",      true),
+            ("-invalid",     true),
             (&long_invalid,  false),
             (&long_valid,    true),
         ];
