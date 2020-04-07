@@ -66,7 +66,7 @@ test:
 
 # Run individual feature tests before main test.
 .PHONY: test_all
-test_all: test_cloudwatch test_s3 test
+test_all: test test_cloudwatch test_s3
 
 # Test CloudWatch feature alone
 .PHONY: test_cloudwatch

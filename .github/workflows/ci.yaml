@@ -21,4 +21,5 @@ jobs:
           override: true
       - name: 'Run Tests'
         run: |
+          # Run cargo tests for all features
           make test_all

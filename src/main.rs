@@ -119,6 +119,9 @@ fn main() -> Result<()> {
     let region = matches.value_of("REGION").unwrap();
     let region = Region::from_str(region)?;
 
+    // This warning will trigger if compiled without the "s3" feature. We're
+    // aware, allow it.
+    #[allow(unused_mut)]
     let mut config = ClientConfig {
         bucket_name: bucket_name,
         mode:        mode,
