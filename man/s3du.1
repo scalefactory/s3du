@@ -63,9 +63,7 @@ Defaults to
 .Dq Cm current .
 .It Fl r Ar region , Fl Fl region Ns = Ns Ar region
 Specify the AWS region to operate in.
-If this argument isn't present
-.Nm
-will default to
+Defaults to
 .Dq Cm us-east-1 .
 .It Fl u Ar unit , Fl Fl unit Ns = Ns Ar unit
 Specify which
@@ -89,9 +87,9 @@ Defaults to
 .El
 .Sh ENVIRONMENT
 .Nm
-can also take tis configuration from environment variables.
+can also take its configuration from environment variables.
 In the event that both command line arguments and environment variables are
-specified, the command line arguments will win.
+specified, the command line arguments will be used.
 .Bl -tag -width S3DU_OBJECT_VERSIONS
 .It Ev AWS_REGION
 is equivalent to setting the
@@ -166,7 +164,7 @@ for CloudWatch mode:
 .Dl cloudwatch:GetMetricStatistics
 .Dl cloudwatch:ListMetrics
 .Pp
-and should grant the following for S3 mode:
+and should grant the following permissions for S3 mode:
 .Pp
 .Dl s3:GetBucketLocation
 .Dl s3:ListAllMyBuckets
