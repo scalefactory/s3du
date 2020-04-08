@@ -293,6 +293,44 @@ mod tests {
         }
     }
 
+    // Create a mock client that returns a specific status code and empty
+    // response body.
+    fn mock_client_with_status(status: u16) -> Client {
+        let dispatcher = MockRequestDispatcher::with_status(status);
+
+        let client = S3Client::new_with(
+            dispatcher,
+            MockCredentialsProvider,
+            Default::default()
+        );
+
+        Client {
+            client:          client,
+            bucket_name:     None,
+            object_versions: ObjectVersions::Current,
+            region:          Region::UsEast1,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_head_bucket() {
+        let tests = vec![
+            (200, true),
+            (403, false),
+            (404, false),
+        ];
+
+        for test in tests {
+            let status_code: u16 = test.0;
+            let expected         = test.1;
+
+            let client = mock_client_with_status(status_code);
+            let ret    = Client::head_bucket(&client, "test-bucket").await;
+
+            assert_eq!(ret, expected);
+        }
+    }
+
     #[tokio::test]
     async fn test_get_bucket_location_err() {
         let client = mock_client(
