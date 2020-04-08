@@ -1,7 +1,7 @@
 [package]
 name = "s3du"
 description = "Command line utility for showing space used in AWS S3 buckets"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"

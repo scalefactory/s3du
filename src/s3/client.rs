@@ -10,6 +10,7 @@ use crate::common::{
 use log::debug;
 use rusoto_core::Region;
 use rusoto_s3::{
+    HeadBucketRequest,
     GetBucketLocationRequest,
     ListObjectsV2Request,
     ListObjectVersionsRequest,
@@ -99,6 +100,25 @@ impl Client {
         let location = Region::from_str(&location)?;
 
         Ok(location)
+    }
+
+    /// Returns a `bool` indicating if we have access to the given `bucket` or
+    /// not.
+    pub async fn head_bucket(&self, bucket: &str) -> bool {
+        debug!("head_bucket for '{}'", bucket);
+
+        let input = HeadBucketRequest {
+            bucket: bucket.into(),
+        };
+
+        let output = self.client.head_bucket(input).await;
+
+        debug!("head_bucket output for '{}' -> '{:?}'", bucket, output);
+
+        match output {
+            Ok(_)  => true,
+            Err(_) => false,
+        }
     }
 
     /// List object versions and filter according to `ObjectVersions`.

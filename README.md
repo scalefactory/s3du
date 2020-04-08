@@ -187,8 +187,9 @@ AWS S3 is a more expensive, but more accurate, method of listing bucket sizes.
 
 The S3 mode of `s3du` will use 1 API call to perform the `ListBuckets` API
 call, 1 API call per listed bucket to `GetBucketLocation` to discover its
-region, and at least 1 call to either `ListObjectsV2` or `ListObjectVersions`
-per bucket.
+region, 1 API call per listed bucket to `HeadBucket` to make sure we have
+access to list the objects, and at least 1 call to either `ListObjectsV2` or
+`ListObjectVersions` per bucket.
 
 The `ListObjectsV2` and `ListObjectVersions` API calls will each return 1,000
 objects maximum, if your bucket has more objects than this, pagination will be
@@ -201,34 +202,34 @@ object versions and our AWS account has 2 buckets.
 versions and 19,048 are non-current versions. This would mean:
 
   - 1 API call to `ListBuckets` for bucket discovery
-  - 1 API calls to `GetBucketLocation` for region discovery for `bucket-a`
-  - 1 API calls to `GetBucketLocation` for region discovery for `bucket-b`
+  - 2 API calls to `GetBucketLocation` for region discovery, 1 for each bucket
+  - 2 API calls to `HeadBucket` to check we have access, 1 for each bucket
   - 10 API calls to `ListObjectsV2` for `bucket-a`
   - 14 API calls to `ListObjectsV2` for `bucket-b`
 
-for a total of 27 API calls.
+for a total of 29 API calls.
 
 If we were to run `s3du` against the same account a second time, but ask for
 the sum of all object versions, we'd get the following:
 
   - 1 API call to `ListBuckets` for bucket discovery
-  - 1 API calls to `GetBucketLocation` for region discovery for `bucket-a`
-  - 1 API calls to `GetBucketLocation` for region discovery for `bucket-b`
+  - 2 API calls to `GetBucketLocation` for region discovery, 1 for each bucket
+  - 2 API calls to `HeadBucket` to check we have access, 1 for each bucket
   - 10 API calls to `ListObjectVersions` for `bucket-a`
   - 33 API calls to `ListObjectVersions` for `bucket-b`
 
-for a total of 46 API calls.
+for a total of 48 API calls.
 
 A third run of `s3du` against the same account but asking for the sum of
 non-current object versions would result in the following:
 
   - 1 API call to `ListBuckets` for bucket discovery
-  - 1 API calls to `GetBucketLocation` for region discovery for `bucket-a`
-  - 1 API calls to `GetBucketLocation` for region discovery for `bucket-b`
+  - 2 API calls to `GetBucketLocation` for region discovery, 1 for each bucket
+  - 2 API calls to `HeadBucket` to check we have access, 1 for each bucket
   - 1 API calls to `ListObjectVersions` for `bucket-a`
   - 33 API calls to `ListObjectVersions` for `bucket-b`
 
-for a total of 37 API calls.
+for a total of 39 API calls.
 
 You will notice that the number of API calls for `bucket-b` are the same across
 both the "all" and "non-current" object versions requests, this is because any
