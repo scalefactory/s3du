@@ -27,7 +27,7 @@ exclude = [
 default = ["cloudwatch", "s3"]
 
 # Only CloudWatch support
-cloudwatch = ["rusoto_cloudwatch"]
+cloudwatch = ["chrono", "rusoto_cloudwatch"]
 
 # Only S3 support
 s3 = ["rusoto_s3"]
@@ -35,12 +35,15 @@ s3 = ["rusoto_s3"]
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-chrono = "0.4"
 clap = "2.33"
 humansize = "1.1"
 log = "0.4"
 pretty_env_logger = "0.4"
 tokio = "0.2"
+
+[dependencies.chrono]
+version = "0.4"
+optional = true
 
 [dependencies.rusoto_cloudwatch]
 version = "0.43.0"
