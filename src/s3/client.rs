@@ -287,7 +287,12 @@ impl Client {
 
         match self.object_versions {
             ObjectVersions::All => {
-                self.size_object_versions(bucket).await
+                let mut size = 0;
+
+                size += self.size_multipart_uploads(bucket).await?;
+                size += self.size_object_versions(bucket).await?;
+
+                Ok(size)
             },
             ObjectVersions::Current => {
                 self.size_current_objects(bucket).await
@@ -491,6 +496,15 @@ mod tests {
         ];
 
         assert_eq!(ret, expected);
+    }
+
+    // This test is currently ignored as we cannot easily mock multiple
+    // requests at the moment. Issues #1671 and PR #1685 should solve this.
+    // Requires responses for both ListMultipartUploads and ListParts
+    #[ignore]
+    #[tokio::test]
+    async fn test_size_multipart_uploads() {
+        todo!()
     }
 
     #[tokio::test]
