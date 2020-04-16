@@ -546,10 +546,12 @@ mod tests {
         let ret = Client::size_parts(
             &client,
             "test-bucket",
-            "foo.txt",
+            "test.zip",
             "abc123",
-            ).await;
+        ).await.unwrap();
 
-        assert!(ret.is_ok());
+        let expected = 1024 * 100 * 2;
+
+        assert_eq!(ret, expected);
     }
 }
