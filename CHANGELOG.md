@@ -2,6 +2,9 @@
 
   - Make [chrono] an optional dependency, as it was only used by the
     `cloudwatch` mode.
+  - Implement sizing of in-progress multipart uploads. Although they aren't
+    really object verisons, the `--object-versions` arguments `all` and
+    `multipart` account for the size of these incomplete objects.
 
 # v1.0.1
 
