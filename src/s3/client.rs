@@ -207,7 +207,7 @@ impl Client {
                                     None
                                 }
                             },
-                            ObjectVersions::Multipart => unimplemented!(),
+                            ObjectVersions::Multipart => unreachable!(),
                             ObjectVersions::NonCurrent => {
                                 if is_latest {
                                     None
