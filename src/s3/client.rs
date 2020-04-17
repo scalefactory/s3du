@@ -12,8 +12,10 @@ use rusoto_core::Region;
 use rusoto_s3::{
     HeadBucketRequest,
     GetBucketLocationRequest,
+    ListMultipartUploadsRequest,
     ListObjectsV2Request,
     ListObjectVersionsRequest,
+    ListPartsRequest,
     S3,
     S3Client,
 };
@@ -121,6 +123,44 @@ impl Client {
         }
     }
 
+    /// List in-progress multipart uploads
+    async fn size_multipart_uploads(&self, bucket: &str) -> Result<usize> {
+        let mut key_marker       = None;
+        let mut size             = 0;
+        let mut upload_id_marker = None;
+
+        loop {
+            let input = ListMultipartUploadsRequest {
+                bucket:           bucket.into(),
+                key_marker:       key_marker.to_owned(),
+                upload_id_marker: upload_id_marker.to_owned(),
+                ..Default::default()
+            };
+
+            let output = self.client.list_multipart_uploads(input).await?;
+
+            if let Some(uploads) = output.uploads {
+                // No iterator here since we need to call an async method.
+                for upload in uploads {
+                    let key       = upload.key.expect("upload key");
+                    let upload_id = upload.upload_id.expect("upload_id");
+
+                    size += self.size_parts(bucket, &key, &upload_id).await?;
+                }
+            }
+
+            match output.is_truncated {
+                Some(true) => {
+                    key_marker       = output.next_key_marker;
+                    upload_id_marker = output.next_upload_id_marker;
+                },
+                _ => break,
+            }
+        }
+
+        Ok(size)
+    }
+
     /// List object versions and filter according to `ObjectVersions`.
     ///
     /// This will be used when the size of `All` or `NonCurrent` objects is
@@ -154,6 +194,7 @@ impl Client {
                         // object version.
                         // Unwrap is hopefully safe, objects should always come
                         // with this.
+                        // Multipart isn't handled here.
                         let is_latest = v.is_latest.unwrap();
 
                         match self.object_versions {
@@ -166,6 +207,7 @@ impl Client {
                                     None
                                 }
                             },
+                            ObjectVersions::Multipart => unreachable!(),
                             ObjectVersions::NonCurrent => {
                                 if is_latest {
                                     None
@@ -245,15 +287,62 @@ impl Client {
 
         match self.object_versions {
             ObjectVersions::All => {
-                self.size_object_versions(bucket).await
+                let mut size = 0;
+
+                size += self.size_multipart_uploads(bucket).await?;
+                size += self.size_object_versions(bucket).await?;
+
+                Ok(size)
             },
             ObjectVersions::Current => {
                 self.size_current_objects(bucket).await
+            },
+            ObjectVersions::Multipart => {
+                self.size_multipart_uploads(bucket).await
             },
             ObjectVersions::NonCurrent => {
                 self.size_object_versions(bucket).await
             },
         }
+    }
+
+    /// List parts of an in-progress multipart upload
+    async fn size_parts(
+        &self,
+        bucket: &str,
+        key: &str,
+        upload_id: &str,
+    ) -> Result<usize> {
+        let mut part_number_marker = None;
+        let mut size               = 0;
+
+        loop {
+            let input = ListPartsRequest {
+                bucket:             bucket.into(),
+                key:                key.into(),
+                part_number_marker: part_number_marker.to_owned(),
+                upload_id:          upload_id.into(),
+                ..Default::default()
+            };
+
+            let output = self.client.list_parts(input).await?;
+
+            if let Some(parts) = output.parts {
+                size += parts
+                    .iter()
+                    .filter_map(|p| p.size)
+                    .sum::<i64>() as usize;
+            }
+
+            match output.is_truncated {
+                Some(true) => {
+                    part_number_marker = output.next_part_number_marker;
+                },
+                _ => break,
+            }
+        }
+
+        Ok(size)
     }
 }
 
@@ -409,6 +498,15 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
+    // This test is currently ignored as we cannot easily mock multiple
+    // requests at the moment. Issues #1671 and PR #1685 should solve this.
+    // Requires responses for both ListMultipartUploads and ListParts
+    #[ignore]
+    #[tokio::test]
+    async fn test_size_multipart_uploads() {
+        todo!()
+    }
+
     #[tokio::test]
     async fn test_size_objects_current() {
         let mut client = mock_client(
@@ -450,5 +548,24 @@ mod tests {
 
             assert_eq!(ret, expected_size);
         }
+    }
+
+    #[tokio::test]
+    async fn test_size_parts() {
+        let client = mock_client(
+            Some("s3-list-parts.xml"),
+            ObjectVersions::Current,
+        );
+
+        let ret = Client::size_parts(
+            &client,
+            "test-bucket",
+            "test.zip",
+            "abc123",
+        ).await.unwrap();
+
+        let expected = 1024 * 100 * 2;
+
+        assert_eq!(ret, expected);
     }
 }

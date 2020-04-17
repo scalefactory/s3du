@@ -75,10 +75,11 @@ versions. Command line flags (or environment variables) can be used to change
 how the S3 mode operates. With these you can change the S3 mode to operate in
 one of 3 ways:
 
-  - All: Show bucket size as the sum of all current object versions + all
-    non-current object versions.
+  - All: Show bucket size as the sum of all modes listed below.
   - Current: Show bucket size as the sum of all current object versions, this
     is the default.
+  - Multipart: Show bucket size as the sum of all in-progress multipart
+    uploads.
   - NonCurrent: Show bucket size as the sum of all non-current object versions.
 
 These can be selected via the `--object-versions` CLI flag if `s3du` was
@@ -188,18 +189,28 @@ AWS S3 is a more expensive, but more accurate, method of listing bucket sizes.
 The S3 mode of `s3du` will use 1 API call to perform the `ListBuckets` API
 call, 1 API call per listed bucket to `GetBucketLocation` to discover its
 region, 1 API call per listed bucket to `HeadBucket` to make sure we have
-access to list the objects, and at least 1 call to either `ListObjectsV2` or
-`ListObjectVersions` per bucket.
+access to list the objects, and:
 
-The `ListObjectsV2` and `ListObjectVersions` API calls will each return 1,000
-objects maximum, if your bucket has more objects than this, pagination will be
-required.
+  - at least 1 call to `ListMultipartUploads`, at least 1 call to
+    `ListObjectVersions`, and at least 1 call to `ListParts` if in-progress
+    multipart uploads are found in the `All` object mode
+  - at least 1 call to `ListObjectsV2` per-bucket in the `Current` object
+    (default) mode
+  - at least 1 call to `ListObjectVersions` per bucket in the `NonCurrent`
+    object mode
+  - at least 1 call to `ListMultipartUploads` per-bucket in the `Multipart`
+    mode with at least 1 call to `ListParts` if any in-progress multipart
+    uploads are found
 
-For example, let's say we're running in S3 mode getting the sizes of current
+Each of the API calls listed above will return 1,000 objects maximum, if your
+bucket has more objects than this, pagination will be required.
+
+For example, let's say we're running in S3 mode getting the sizes of `current`
 object versions and our AWS account has 2 buckets.
 `bucket-a` (no versioning enabled) has 10,000 objects and `bucket-b`
 (versioning enabled) has 32,768 object versions of which 13,720 are current
-versions and 19,048 are non-current versions. This would mean:
+versions and 19,048 are non-current versions. There is also an in-progress
+multipart upload with 2 parts uploaded in `bucket-a`. This would mean:
 
   - 1 API call to `ListBuckets` for bucket discovery
   - 2 API calls to `GetBucketLocation` for region discovery, 1 for each bucket
@@ -210,18 +221,21 @@ versions and 19,048 are non-current versions. This would mean:
 for a total of 29 API calls.
 
 If we were to run `s3du` against the same account a second time, but ask for
-the sum of all object versions, we'd get the following:
+the sum of `all` object versions, we'd get the following:
 
   - 1 API call to `ListBuckets` for bucket discovery
   - 2 API calls to `GetBucketLocation` for region discovery, 1 for each bucket
   - 2 API calls to `HeadBucket` to check we have access, 1 for each bucket
   - 10 API calls to `ListObjectVersions` for `bucket-a`
   - 33 API calls to `ListObjectVersions` for `bucket-b`
+  - 1 API call to `ListMultipartUploads` for `bucket-a`
+  - 1 API call to `ListMultipartUploads` for `bucket-b`
+  - 1 API call to `ListParts` for `bucket-a`
 
-for a total of 48 API calls.
+for a total of 51 API calls.
 
 A third run of `s3du` against the same account but asking for the sum of
-non-current object versions would result in the following:
+`non-current` object versions would result in the following:
 
   - 1 API call to `ListBuckets` for bucket discovery
   - 2 API calls to `GetBucketLocation` for region discovery, 1 for each bucket
@@ -231,11 +245,11 @@ non-current object versions would result in the following:
 
 for a total of 39 API calls.
 
-You will notice that the number of API calls for `bucket-b` are the same across
-both the "all" and "non-current" object versions requests, this is because any
-filtering for current vs. non-current objects in these scenarios must be done
-by `s3du`. The `ListObjectVersions` API does not let us specify which object
-versions we'd like to retrieve.
+You will notice that the number of API calls to `ListObjectVersions` for
+`bucket-b` are the same across both the `all` and `non-current` object versions
+requests, this is because any filtering for current vs. non-current objects in
+these scenarios must be done by `s3du`. The `ListObjectVersions` API does not
+let us specify which object versions we'd like to retrieve.
 
 <!-- links -->
 [`aws-vault`]: https://github.com/99designs/aws-vault/

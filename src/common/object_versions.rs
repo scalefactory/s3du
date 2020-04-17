@@ -14,6 +14,9 @@ pub enum ObjectVersions {
     /// Sum only size of current objects
     Current,
 
+    /// Sum only size of in-progress multipart uploads
+    Multipart,
+
     /// Sum only size of non-current objects
     NonCurrent,
 }
@@ -27,6 +30,7 @@ impl FromStr for ObjectVersions {
         match s {
             "all"         => Ok(Self::All),
             "current"     => Ok(Self::Current),
+            "multipart"   => Ok(Self::Multipart),
             "non-current" => Ok(Self::NonCurrent),
             _             => Err("no match"),
         }

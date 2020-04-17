@@ -61,6 +61,7 @@ const VALID_SIZE_UNITS: &[&str] = &[
 const OBJECT_VERSIONS: &[&str] = &[
     "all",
     "current",
+    "multipart",
     "non-current",
 ];
 

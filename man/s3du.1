@@ -52,6 +52,7 @@ mode.
 Possible values are:
 .Dq Cm all ,
 .Dq Cm current ,
+.Dq Cm multipart ,
 and
 .Dq Cm non-current .
 This flag will only be present if
@@ -150,6 +151,14 @@ pandemic.
 .Nm
 was developed by
 .An David O'Rourke .
+.Sh CAVEATS
+While in-progress
+.Ar multipart
+uploads are not technically
+.Dq object versions ,
+selecting them for sizing is still covered under the
+.Fl Fl object-versions
+option as it is the most logical way to perform that operation.
 .Sh BUGS
 Please report bugs, issues, and feature requests to
 .Lk https://github.com/phyber/s3du/issues
