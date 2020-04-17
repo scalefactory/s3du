@@ -191,12 +191,15 @@ call, 1 API call per listed bucket to `GetBucketLocation` to discover its
 region, 1 API call per listed bucket to `HeadBucket` to make sure we have
 access to list the objects, and:
 
+  - at least 1 call to `ListMultipartUploads`, at least 1 call to
+    `ListObjectVersions`, and at least 1 call to `ListParts` if in-progress
+    multipart uploads are found in the `All` object mode
   - at least 1 call to `ListObjectsV2` per-bucket in the `Current` object
     (default) mode
   - at least 1 call to `ListObjectVersions` per bucket in the `NonCurrent`
     object mode
   - at least 1 call to `ListMultipartUploads` per-bucket in the `Multipart`
-    mode with at least 1 call to `ListPart` if any in-progress multipart
+    mode with at least 1 call to `ListParts` if any in-progress multipart
     uploads are found
 
 Each of the API calls listed above will return 1,000 objects maximum, if your
