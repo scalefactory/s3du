@@ -114,10 +114,27 @@ fn main() -> Result<()> {
     // Get the unit size to display
     let unit = value_t!(matches, "UNIT", SizeUnit)?;
 
-    // Get the AWS_REGION
-    // Safe to unwrap here as we validated the argument while parsing the CLI.
-    let region = matches.value_of("REGION").unwrap();
-    let region = Region::from_str(region)?;
+    // Here we get the region, if a custom endpoint is set, that is used,
+    // otherwise we get the regular region.
+    // Unwraps on values here should be fine, as they're checked when the CLI
+    // is validated.
+    let region = if matches.is_present("ENDPOINT") {
+        if mode == ClientMode::S3 {
+            let endpoint = matches.value_of("ENDPOINT").unwrap();
+            Region::Custom {
+                name:     "custom".into(),
+                endpoint: endpoint.into(),
+            }
+        }
+        else {
+            eprintln!("Error: Endpoint supplied but client mode is not S3");
+            ::std::process::exit(1);
+        }
+    }
+    else {
+        let region = matches.value_of("REGION").unwrap();
+        Region::from_str(region)?
+    };
 
     // This warning will trigger if compiled without the "s3" feature. We're
     // aware, allow it.

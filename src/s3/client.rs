@@ -101,6 +101,8 @@ impl Client {
 
         let location = Region::from_str(&location)?;
 
+        debug!("Final location: {:?}", location);
+
         Ok(location)
     }
 
@@ -120,6 +122,14 @@ impl Client {
         match output {
             Ok(_)  => true,
             Err(_) => false,
+        }
+    }
+
+    /// Returns a bool indicating if the region is a custom region
+    pub fn is_custom_client_region(&self) -> bool {
+        match self.region {
+            Region::Custom { .. } => true,
+            _                     => false,
         }
     }
 

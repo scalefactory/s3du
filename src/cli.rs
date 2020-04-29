@@ -13,6 +13,7 @@ use clap::{
 use log::debug;
 use rusoto_core::Region;
 use std::str::FromStr;
+use url::Url;
 
 // This catches cases where we've compiled with either:
 //   - Only "cloudwatch"
@@ -100,6 +101,30 @@ fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Ensures that a given endpoint is valid, where valid means:
+///   - Is not an empty string
+///   - Is not an AWS endpoint
+///   - Parses as a valid URL
+fn is_valid_endpoint(s: String) -> Result<(), String> {
+    // Endpoint cannot be an empty string
+    if s.is_empty() {
+        return Err("Endpoint cannot be empty".into());
+    }
+
+    // Endpoint cannot be an AWS endpoint
+    if s.contains("amazonaws.com") {
+        return Err("Endpoint cannot be used to specify AWS endpoints".into());
+    }
+
+    // Endpoint must parse as a valid URL
+    match Url::parse(&s) {
+        Ok(_)  => Ok(()),
+        Err(e) => Err(format!("Could not parse endpoint: {}", e).to_string()),
+    }?;
+
+    Ok(())
+}
+
 /// Create the command line parser
 fn create_app<'a, 'b>() -> App<'a, 'b> {
     debug!("Creating CLI app");
@@ -153,6 +178,17 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .takes_value(true)
                 .default_value(DEFAULT_UNIT)
                 .possible_values(VALID_SIZE_UNITS)
+        )
+        .arg(
+            Arg::with_name("ENDPOINT")
+                .env("S3DU_ENDPOINT")
+                .hide_env_values(true)
+                .long("endpoint")
+                .short("e")
+                .value_name("ENDPOINT")
+                .help("Sets a custom endpoint to connect to")
+                .takes_value(true)
+                .validator(is_valid_endpoint)
         );
 
     #[cfg(feature = "s3")]
@@ -229,6 +265,28 @@ mod tests {
             let valid = test.1;
 
             let ret = is_valid_aws_s3_bucket_name(name.into());
+
+            assert_eq!(ret.is_ok(), valid);
+        }
+    }
+
+    #[test]
+    fn test_is_valid_endpoint() {
+        let tests = vec![
+            ("https://s3.eu-west-1.amazonaws.com", false),
+            ("https://minio.example.org/endpoint", true),
+            ("http://minio.example.org/endpoint",  true),
+            ("http://127.0.0.1:9000",              true),
+            ("../ohno",                            false),
+            ("minio.example.org",                  false),
+            ("",                                   false),
+        ];
+
+        for test in tests {
+            let url   = test.0;
+            let valid = test.1;
+
+            let ret = is_valid_endpoint(url.into());
 
             assert_eq!(ret.is_ok(), valid);
         }
