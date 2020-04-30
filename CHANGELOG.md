@@ -1,3 +1,8 @@
+# v1.0.3
+
+  - Implement custom endpoints for S3 mode, which enables using `s3du` against
+    other S3 compatible storage, such as [MinIO].
+
 # v1.0.2
 
   - Make [chrono] an optional dependency, as it was only used by the
@@ -17,3 +22,4 @@
 
 <!-- links -->
 [chrono]: https://crates.io/crates/chrono
+[MinIO]: https://min.io/

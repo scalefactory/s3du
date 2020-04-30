@@ -251,9 +251,25 @@ requests, this is because any filtering for current vs. non-current objects in
 these scenarios must be done by `s3du`. The `ListObjectVersions` API does not
 let us specify which object versions we'd like to retrieve.
 
+## S3 Compatible Storage
+
+`s3du` allows a custom endpoint to be specified while running in S3 mode. This
+allows use on S3 compatible storage such as [MinIO].
+
+This use case is currently only tested against MinIO and is very basic.
+
+### Example
+
+```shell
+env AWS_ACCESS_KEY_ID=minio \
+    AWS_SECRET_ACCESS_KEY=miniosecret \
+    s3du --mode=s3 --endpoint=https://minio.example.org/
+```
+
 <!-- links -->
 [`aws-vault`]: https://github.com/99designs/aws-vault/
 [once per day]: https://docs.aws.amazon.com/AmazonS3/latest/dev/cloudwatch-monitoring.html
 [AWS credentials]: https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html
 [AWS CloudWatch]: https://aws.amazon.com/cloudwatch/
 [AWS S3]: https://aws.amazon.com/s3/
+[MinIO]: htts://min.io/

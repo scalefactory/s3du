@@ -40,7 +40,7 @@ impl BucketSizer for Client {
 
             // We can only ListBucket for the region our S3 client is in, so
             // we filter for that region here.
-            if region == self.region {
+            if region == self.region || self.is_custom_client_region() {
                 // If we don't have access to the bucket, skip it.
                 if !self.head_bucket(&bucket).await {
                     debug!("Access denied for '{}'", bucket);

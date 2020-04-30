@@ -1004,6 +1004,7 @@ dependencies = [
  "rusoto_mock 0.43.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_s3 0.43.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

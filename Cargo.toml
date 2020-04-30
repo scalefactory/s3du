@@ -30,7 +30,7 @@ default = ["cloudwatch", "s3"]
 cloudwatch = ["chrono", "rusoto_cloudwatch"]
 
 # Only S3 support
-s3 = ["rusoto_s3"]
+s3 = ["rusoto_s3", "url"]
 
 [dependencies]
 anyhow = "1.0"
@@ -60,6 +60,10 @@ features = ["rustls"]
 version = "0.43.0"
 default-features = false
 features = ["rustls"]
+optional = true
+
+[dependencies.url]
+version = "2.1"
 optional = true
 
 [dev-dependencies]
