@@ -10,6 +10,7 @@
 .Op Fl Fl help
 .Op Fl Fl version
 .Nm
+.Op Fl e Ar endpoint
 .Op Fl m Ar mode
 .Op Fl o Ar versions
 .Op Fl r Ar region
@@ -31,6 +32,18 @@ The options are as follows:
 Prints help information
 .It Fl V , Fl Fl version
 Prints version information
+.It Fl e Ar url , Fl Fl endpoint Ns = Ns Ar url
+Specify an endpoint to connect to in
+.Cm s3
+mode.
+This allows for use of
+.Nm
+against S3 compatible storage such as MinIO.
+This flag will only be present if
+.Nm
+was compiled with the
+.Dq Cm s3
+feature, and only affects the S3 mode.
 .It Fl m Ar mode , Fl Fl mode Ns = Ns Ar mode
 Specify which mode
 .Nm
@@ -100,6 +113,15 @@ option.
 is equivalent to setting the
 .Ar bucket
 argument.
+.It Ev S3DU_ENDPOINT
+is equivalent to setting the
+.Fl Fl endpoint
+option.
+This environment variable will only be present if
+.Nm
+has been compiled with the
+.Dq Cm s3
+feature.
 .It Ev S3DU_MODE
 is equivalent to setting the
 .Fl Fl mode
@@ -141,6 +163,10 @@ Show a specific bucket size via CloudWatch in a non-default region:
 Show a specific bucket via S3 showing the size of only non-current objects:
 .Pp
 .Dl $ s3du --mode=s3 --object-versions=non-current my-bucket
+.Pp
+Show space used by all buckets in S3 compatible storage:
+.Pp
+.Dl $ s3du --mode=s3 --endpoint=https://s3-compatible.example.org
 .Sh HISTORY
 .Nm
 was started around the beginning of 2020 and became feature complete around
@@ -159,6 +185,11 @@ uploads are not technically
 selecting them for sizing is still covered under the
 .Fl Fl object-versions
 option as it is the most logical way to perform that operation.
+.Pp
+Usage of
+.Nm
+against S3 compatible storage only receives minimal testing as its main goal is
+to support AWS S3.
 .Sh BUGS
 Please report bugs, issues, and feature requests to
 .Lk https://github.com/phyber/s3du/issues
