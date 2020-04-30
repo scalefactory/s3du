@@ -13,6 +13,8 @@ use clap::{
 use log::debug;
 use rusoto_core::Region;
 use std::str::FromStr;
+
+#[cfg(feature = "s3")]
 use url::Url;
 
 // This catches cases where we've compiled with either:
@@ -105,6 +107,7 @@ fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
 ///   - Is not an empty string
 ///   - Is not an AWS endpoint
 ///   - Parses as a valid URL
+#[cfg(feature = "s3")]
 fn is_valid_endpoint(s: String) -> Result<(), String> {
     // Endpoint cannot be an empty string
     if s.is_empty() {
@@ -178,7 +181,10 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .takes_value(true)
                 .default_value(DEFAULT_UNIT)
                 .possible_values(VALID_SIZE_UNITS)
-        )
+        );
+
+    #[cfg(feature = "s3")]
+    let app = app
         .arg(
             Arg::with_name("ENDPOINT")
                 .env("S3DU_ENDPOINT")
@@ -189,21 +195,19 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .help("Sets a custom endpoint to connect to")
                 .takes_value(true)
                 .validator(is_valid_endpoint)
+        )
+        .arg(
+            Arg::with_name("OBJECT_VERSIONS")
+                .env("S3DU_OBJECT_VERSIONS")
+                .hide_env_values(true)
+                .long("object-versions")
+                .short("o")
+                .value_name("VERSIONS")
+                .help("Set which object versions to sum in S3 mode")
+                .takes_value(true)
+                .default_value(DEFAULT_OBJECT_VERSIONS)
+                .possible_values(OBJECT_VERSIONS)
         );
-
-    #[cfg(feature = "s3")]
-    let app = app.arg(
-        Arg::with_name("OBJECT_VERSIONS")
-            .env("S3DU_OBJECT_VERSIONS")
-            .hide_env_values(true)
-            .long("object-versions")
-            .short("o")
-            .value_name("VERSIONS")
-            .help("Set which object versions to sum in S3 mode")
-            .takes_value(true)
-            .default_value(DEFAULT_OBJECT_VERSIONS)
-            .possible_values(OBJECT_VERSIONS)
-    );
 
     app
 }
@@ -270,6 +274,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "s3")]
     #[test]
     fn test_is_valid_endpoint() {
         let tests = vec![

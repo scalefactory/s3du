@@ -118,6 +118,7 @@ fn main() -> Result<()> {
     // otherwise we get the regular region.
     // Unwraps on values here should be fine, as they're checked when the CLI
     // is validated.
+    #[cfg(feature = "s3")]
     let region = if matches.is_present("ENDPOINT") {
         if mode == ClientMode::S3 {
             let endpoint = matches.value_of("ENDPOINT").unwrap();
@@ -132,6 +133,14 @@ fn main() -> Result<()> {
         }
     }
     else {
+        let region = matches.value_of("REGION").unwrap();
+        Region::from_str(region)?
+    };
+
+    // Endpoint selection isn't supported for CloudWatch, so we can drop it if
+    // we're compiled without the S3 feature.
+    #[cfg(all(feature = "cloudwatch", not(feature = "s3")))]
+    let region = {
         let region = matches.value_of("REGION").unwrap();
         Region::from_str(region)?
     };
