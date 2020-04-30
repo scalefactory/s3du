@@ -1,9 +1,11 @@
-# v1.0.3
+# `s3du`
+
+## v1.0.3
 
   - Implement custom endpoints for S3 mode, which enables using `s3du` against
     other S3 compatible storage, such as [MinIO].
 
-# v1.0.2
+## v1.0.2
 
   - Make [chrono] an optional dependency, as it was only used by the
     `cloudwatch` mode.
@@ -11,12 +13,12 @@
     really object verisons, the `--object-versions` arguments `all` and
     `multipart` account for the size of these incomplete objects.
 
-# v1.0.1
+## v1.0.1
 
   - Fix a potential issue where we might have tried to list a bucket we don't
     have access to.
 
-# v1.0.0
+## v1.0.0
 
   - Initial release
 
