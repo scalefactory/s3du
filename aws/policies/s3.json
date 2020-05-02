@@ -7,7 +7,9 @@
       "Action": [
         "s3:GetBucketLocation",
         "s3:ListAllMyBuckets",
-        "s3:ListBucket"
+        "s3:ListBucket",
+        "s3:ListBucketMultipartUploadParts",
+        "s3:ListMultipartUploadParts"
       ],
       "Resource": [
         "*"

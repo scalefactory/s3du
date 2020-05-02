@@ -143,7 +143,9 @@ This policy will enforce HTTPS use and will allow `s3du` access to the AWS S3
             "Action": [
                 "s3:GetBucketLocation",
                 "s3:ListAllMyBuckets",
-                "s3:ListBucket"
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:ListMultipartUploadParts"
             ],
             "Resource": [
                 "*"

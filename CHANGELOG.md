@@ -7,6 +7,7 @@
   - Improved AWS default region discovery by attempting to get the default
     region from the `AWS_DEFAULT_REGION` and `AWS_REGION` environment variables
     before falling back to `us-east-1`.
+  - Fixed example IAM policies to include AWS S3 multipart upload permissions.
 
 ## v1.0.2
 

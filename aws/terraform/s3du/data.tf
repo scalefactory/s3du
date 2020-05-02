@@ -72,6 +72,8 @@ data aws_iam_policy_document s3 {
       "s3:GetBucketLocation",
       "s3:ListAllMyBuckets",
       "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
     ]
 
     resources = [
