@@ -10,6 +10,7 @@ use clap::{
     Arg,
     ArgMatches,
 };
+use lazy_static::lazy_static;
 use log::debug;
 use rusoto_core::Region;
 use std::str::FromStr;
@@ -34,8 +35,19 @@ const DEFAULT_MODE: &str = "s3";
 #[cfg(feature = "s3")]
 const DEFAULT_OBJECT_VERSIONS: &str = "current";
 
-/// Default AWS region if one isn't provided on the command line.
-const DEFAULT_REGION: &str = "us-east-1";
+lazy_static! {
+    /// Default AWS region if one isn't provided on the command line.
+    ///
+    /// Obtains the default region in the following order:
+    ///   - `AWS_DEFAULT_REGION` environment variable
+    ///   - `AWS_REGION` environment variable
+    ///   - Falls back to `us-east-1` if regions in the environment variables
+    ///     are malformed or unknown to Rusoto.
+    static ref DEFAULT_REGION: String = {
+        let region = Region::default();
+        region.name().into()
+    };
+}
 
 /// Default unit to display sizes in.
 const DEFAULT_UNIT: &str = "binary";
@@ -167,7 +179,7 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .value_name("REGION")
                 .help("Set the AWS region to create the client in.")
                 .takes_value(true)
-                .default_value(DEFAULT_REGION)
+                .default_value(&DEFAULT_REGION)
                 .validator(is_valid_aws_region)
         )
         .arg(
