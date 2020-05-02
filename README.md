@@ -272,4 +272,4 @@ env AWS_ACCESS_KEY_ID=minio \
 [AWS credentials]: https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html
 [AWS CloudWatch]: https://aws.amazon.com/cloudwatch/
 [AWS S3]: https://aws.amazon.com/s3/
-[MinIO]: htts://min.io/
+[MinIO]: https://min.io/
