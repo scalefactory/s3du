@@ -50,7 +50,7 @@ s3du --mode=s3 --object-versions=non-current my-bucket
 More information on running `s3du` can be found in the man page or via
 `s3du --help`.
 
-## Features
+## Crate Features
 
 The crate has two features, which are both enabled by default.
 
@@ -102,7 +102,7 @@ Under the `aws` directory of the source repository.
 ### CloudWatch IAM Policy
 
 This policy will enforce HTTPS use and will allow `s3du` access to the AWS
-CloudWatch `GetMetricStatistics` and `ListMetrics` APIs.
+CloudWatch APIs that it requires.
 
 ```json
 {
@@ -131,7 +131,7 @@ CloudWatch `GetMetricStatistics` and `ListMetrics` APIs.
 ### S3 IAM Policy
 
 This policy will enforce HTTPS use and will allow `s3du` access to the AWS S3
-`GetBucketLocation`, `ListAllMyBuckets`, and `ListBucket` APIs.
+APIs that it requires.
 
 ```json
 {
