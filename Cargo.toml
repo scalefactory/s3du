@@ -35,7 +35,6 @@ s3 = ["rusoto_s3", "url"]
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-clap = "2.33"
 humansize = "1.1"
 lazy_static = "1.4"
 log = "0.4"
@@ -45,6 +44,11 @@ tokio = "0.2"
 [dependencies.chrono]
 version = "0.4"
 optional = true
+
+[dependencies.clap]
+version = "2.33"
+default-features = false
+features = ["color", "suggestions"]
 
 [dependencies.rusoto_cloudwatch]
 version = "0.43.0"
