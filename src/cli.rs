@@ -126,16 +126,26 @@ fn is_valid_endpoint(s: String) -> Result<(), String> {
         return Err("Endpoint cannot be empty".into());
     }
 
-    // Endpoint cannot be an AWS endpoint
-    if s.contains("amazonaws.com") {
-        return Err("Endpoint cannot be used to specify AWS endpoints".into());
-    }
-
     // Endpoint must parse as a valid URL
-    match Url::parse(&s) {
-        Ok(_)  => Ok(()),
-        Err(e) => Err(format!("Could not parse endpoint: {}", e).to_string()),
+    let url = match Url::parse(&s) {
+        Ok(u)  => Ok(u),
+        Err(e) => Err(format!("Could not parse endpoint: {}", e)),
     }?;
+
+    // We can only use HTTP or HTTPS URLs.
+    match url.scheme() {
+        "http" | "https" => Ok(()),
+        scheme           => {
+            Err(format!("URL scheme must be http or https, found {}", scheme))
+        },
+    }?;
+
+    // Endpoint cannot be an AWS endpoint
+    if let Some(hostname) = url.host_str() {
+        if hostname.contains("amazonaws.com") {
+            return Err("Endpoint cannot be used to specify AWS endpoints".into());
+        }
+    }
 
     Ok(())
 }
@@ -240,12 +250,12 @@ mod tests {
     #[test]
     fn test_is_valid_aws_region() {
         let tests = vec![
-            ("eu-central-1", true),
-            ("eu-west-1", true),
-            ("eu-west-2", true),
+            ("eu-central-1",        true),
+            ("eu-west-1",           true),
+            ("eu-west-2",           true),
             ("int-space-station-1", false),
-            ("nope-nope-42", false),
-            ("us-east-1", true),
+            ("nope-nope-42",        false),
+            ("us-east-1",           true),
         ];
 
         for test in tests {
@@ -297,6 +307,10 @@ mod tests {
             ("../ohno",                            false),
             ("minio.example.org",                  false),
             ("",                                   false),
+            ("ftp://invalid.example.org",          false),
+            ("ftp://no@invalid.example.org",       false),
+            ("data:text/plain;invalid",            false),
+            ("unix:/var/run/invalid.socket",       false),
         ];
 
         for test in tests {
