@@ -213,7 +213,7 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .hide_env_values(true)
                 .long("endpoint")
                 .short("e")
-                .value_name("ENDPOINT")
+                .value_name("URL")
                 .help("Sets a custom endpoint to connect to")
                 .takes_value(true)
                 .validator(is_valid_endpoint)
