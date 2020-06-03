@@ -51,18 +51,18 @@ default-features = false
 features = ["color", "suggestions"]
 
 [dependencies.rusoto_cloudwatch]
-version = "0.43.0"
+version = "0.44.0"
 default-features = false
 features = ["rustls"]
 optional = true
 
 [dependencies.rusoto_core]
-version = "0.43.0"
+version = "0.44.0"
 default-features = false
 features = ["rustls"]
 
 [dependencies.rusoto_s3]
-version = "0.43.0"
+version = "0.44.0"
 default-features = false
 features = ["rustls"]
 optional = true
@@ -75,6 +75,6 @@ optional = true
 pretty_assertions = "0.6"
 
 [dev-dependencies.rusoto_mock]
-version = "0.43.0"
+version = "0.44.0"
 default-features = false
 features = ["rustls"]
