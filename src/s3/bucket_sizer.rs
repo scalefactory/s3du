@@ -85,6 +85,7 @@ mod tests {
         MockCredentialsProvider,
         MockRequestDispatcher,
         MockResponseReader,
+        MultipleMockRequestDispatcher,
         ReadMockResponse,
     };
     use rusoto_s3::S3Client;
@@ -114,20 +115,42 @@ mod tests {
         }
     }
 
-    // This test is currently ignored as we cannot easily mock multiple
-    // requests at the moment. Issues #1671 and PR #1685 should solve this.
+    // Return a MockRequestDispatcher with a body given by the data_file.
+    fn dispatcher_with_body(data_file: &str) -> MockRequestDispatcher {
+        let data = MockResponseReader::read_response("test-data", data_file);
+
+        MockRequestDispatcher::default().with_body(&data)
+    }
+
     #[tokio::test]
-    #[ignore]
     async fn test_buckets() {
         let expected = vec![
             "a-bucket-name",
             "another-bucket-name",
         ];
 
-        let mut client = mock_client(
-            Some("s3-list-buckets.xml"),
-            ObjectVersions::Current,
+        // This ListBuckets request returns two buckets, so we have to mock two
+        // pairs of GetBucketLocation and HeadBucket responses.
+        let mock = MultipleMockRequestDispatcher::new(vec![
+            dispatcher_with_body("s3-list-buckets.xml"),
+            dispatcher_with_body("s3-get-bucket-location.xml"),
+            MockRequestDispatcher::with_status(200),
+            dispatcher_with_body("s3-get-bucket-location.xml"),
+            MockRequestDispatcher::with_status(200),
+        ]);
+
+        let s3client = S3Client::new_with(
+            mock,
+            MockCredentialsProvider,
+            Region::EuWest1,
         );
+
+        let mut client = Client {
+            client:          s3client,
+            bucket_name:     None,
+            object_versions: ObjectVersions::Current,
+            region:          Region::EuWest1,
+        };
 
         let buckets = Client::buckets(&mut client).await.unwrap();
 
