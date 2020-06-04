@@ -1,5 +1,13 @@
 # `s3du`
 
+## UPCOMING
+
+  - Update to [Rusoto] 0.44.0
+    - Adds support for two new regions `af-south-1` (Africa), and `eu-south-1`
+      (Milan).
+  - Fully implement previously ignored tests, thanks to Rusoto adding
+    `MultipleMockRequestDispatcher`.
+
 ## v1.0.3
 
   - Implement custom endpoints for S3 mode, which enables using `s3du` against
