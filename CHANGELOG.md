@@ -37,3 +37,4 @@
 <!-- links -->
 [chrono]: https://crates.io/crates/chrono
 [MinIO]: https://min.io/
+[Rusoto]: https://www.rusoto.org/
