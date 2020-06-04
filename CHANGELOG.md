@@ -1,6 +1,6 @@
 # `s3du`
 
-## UPCOMING
+## v1.0.4
 
   - Update to [Rusoto] 0.44.0
     - Adds support for two new regions `af-south-1` (Africa), and `eu-south-1`
