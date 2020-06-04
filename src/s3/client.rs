@@ -364,6 +364,7 @@ mod tests {
         MockCredentialsProvider,
         MockRequestDispatcher,
         MockResponseReader,
+        MultipleMockRequestDispatcher,
         ReadMockResponse,
     };
 
@@ -390,6 +391,13 @@ mod tests {
             object_versions: versions,
             region:          Region::UsEast1,
         }
+    }
+
+    // Return a MockRequestDispatcher with a body given by the data_file.
+    fn dispatcher_with_body(data_file: &str) -> MockRequestDispatcher {
+        let data = MockResponseReader::read_response("test-data", data_file);
+
+        MockRequestDispatcher::default().with_body(&data)
     }
 
     // Create a mock client that returns a specific status code and empty
@@ -508,13 +516,34 @@ mod tests {
         assert_eq!(ret, expected);
     }
 
-    // This test is currently ignored as we cannot easily mock multiple
-    // requests at the moment. Issues #1671 and PR #1685 should solve this.
-    // Requires responses for both ListMultipartUploads and ListParts
-    #[ignore]
     #[tokio::test]
     async fn test_size_multipart_uploads() {
-        todo!()
+        let expected = 204800;
+
+        let mock = MultipleMockRequestDispatcher::new(vec![
+            dispatcher_with_body("s3-list-multipart-uploads.xml"),
+            dispatcher_with_body("s3-list-parts.xml"),
+        ]);
+
+        let s3client = S3Client::new_with(
+            mock,
+            MockCredentialsProvider,
+            Default::default(),
+        );
+
+        let mut client = Client {
+            client:          s3client,
+            bucket_name:     Some("test-bucket".into()),
+            object_versions: ObjectVersions::Current,
+            region:          Default::default(),
+        };
+
+        let size = Client::size_multipart_uploads(
+            &mut client,
+            "test-bucket",
+        ).await.unwrap();
+
+        assert_eq!(size, expected);
     }
 
     #[tokio::test]

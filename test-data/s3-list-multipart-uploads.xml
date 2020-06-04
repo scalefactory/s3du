@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>test-bucket</Bucket>
+  <KeyMarker></KeyMarker>
+  <UploadIdMarker></UploadIdMarker>
+  <NextKeyMarker>test.zip</NextKeyMarker>
+  <NextUploadIdMarker>K0DUoCrtxIbJ4z36VsHYRBvULHu3gE4MsMwmnRUgihHbNay</NextUploadIdMarker>
+  <MaxUploads>1000</MaxUploads>
+  <IsTruncated>false</IsTruncated>
+  <Upload>
+    <Key>test.zip</Key>
+    <UploadId>K0DUoCrtxIbJ4z36VsHYRBvULHu3gE4MsMwmnRUgihHbNay</UploadId>
+    <Initiator>
+      <ID>arn:aws:iam::123456789012:user/test</ID>
+      <DisplayName>test</DisplayName>
+    </Initiator>
+    <Owner>
+      <ID>f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2</ID>
+      <DisplayName>test</DisplayName>
+    </Owner>
+    <StorageClass>STANDARD</StorageClass>
+    <Initiated>2015-09-08T21:02:00.000Z</Initiated>
+  </Upload>
+</ListMultipartUploadsResult>
