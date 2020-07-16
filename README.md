@@ -16,6 +16,10 @@ summed.
 
 `s3du` can be installed by running `cargo install s3du`.
 
+## Minimum Supported Rust Version
+
+The MSRV for this project is currently 1.40.0.
+
 ## Usage
 
 `s3du` uses the default [AWS credentials] chain. As long as your AWS
