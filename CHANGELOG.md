@@ -1,5 +1,9 @@
 # `s3du`
 
+## v1.0.5
+
+  - Update to [Rusoto] 0.45.0
+
 ## v1.0.4
 
   - Update to [Rusoto] 0.44.0

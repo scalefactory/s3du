@@ -1,7 +1,7 @@
 [package]
 name = "s3du"
 description = "Command line utility for showing space used in AWS S3 buckets"
-version = "1.0.4"
+version = "1.0.5"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -51,18 +51,18 @@ default-features = false
 features = ["color", "suggestions"]
 
 [dependencies.rusoto_cloudwatch]
-version = "0.44.0"
+version = "0.45.0"
 default-features = false
 features = ["rustls"]
 optional = true
 
 [dependencies.rusoto_core]
-version = "0.44.0"
+version = "0.45.0"
 default-features = false
 features = ["rustls"]
 
 [dependencies.rusoto_s3]
-version = "0.44.0"
+version = "0.45.0"
 default-features = false
 features = ["rustls"]
 optional = true
@@ -75,6 +75,6 @@ optional = true
 pretty_assertions = "0.6"
 
 [dev-dependencies.rusoto_mock]
-version = "0.44.0"
+version = "0.45.0"
 default-features = false
 features = ["rustls"]
