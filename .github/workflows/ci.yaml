@@ -36,3 +36,17 @@ jobs:
         run: |
           # Run cargo tests for all features
           make test_all
+  mandoc:
+    name: 'Lint Man Page'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v2'
+        with:
+          fetch-depth: 1
+      - name: 'Install mandoc'
+        run: |
+          sudo apt install macdoc
+      - name: 'Lint man page'
+        run: |
+          make manlint
