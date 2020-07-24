@@ -46,7 +46,7 @@ jobs:
           fetch-depth: 1
       - name: 'Install mandoc'
         run: |
-          sudo apt install macdoc
+          sudo apt install mandoc
       - name: 'Lint man page'
         run: |
           make manlint
