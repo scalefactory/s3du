@@ -45,9 +45,14 @@ jobs:
           VERSION="$(basename ${{ github.ref }})"
           OUTPUT="release_changelog.md"
 
+          # Add changelog for version
           sed -n "/^## ${VERSION}/,/^##/p;" CHANGELOG.md \
             | sed '$ d' \
             > "${OUTPUT}"
+
+          # Add all links
+          sed -n "/^<\!-- links -->/,//p;" CHANGELOG.md \
+            >> "${OUTPUT}"
 
           echo "::set-output name=body_path::${OUTPUT}"
       - name: 'Create Release'
