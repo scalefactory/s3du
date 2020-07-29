@@ -61,13 +61,13 @@ impl Client {
     pub async fn list_buckets(&self) -> Result<BucketNames> {
         let output = self.client.list_buckets().await?;
 
-        let bucket_names = match output.buckets {
-            Some(buckets) => {
-                buckets.iter()
-                    .filter_map(|b| b.name.to_owned())
-                    .collect()
-            },
-            None => Vec::new(),
+        let bucket_names = if let Some(buckets) = output.buckets {
+            buckets.iter()
+                .filter_map(|b| b.name.to_owned())
+                .collect()
+        }
+        else {
+            Vec::new()
         };
 
         Ok(bucket_names)
@@ -159,12 +159,12 @@ impl Client {
                 }
             }
 
-            match output.is_truncated {
-                Some(true) => {
-                    key_marker       = output.next_key_marker;
-                    upload_id_marker = output.next_upload_id_marker;
-                },
-                _ => break,
+            if let Some(true) = output.is_truncated {
+                key_marker       = output.next_key_marker;
+                upload_id_marker = output.next_upload_id_marker;
+            }
+            else {
+                break;
             }
         }
 
@@ -233,15 +233,12 @@ impl Client {
 
             // Check if we need to continue processing bucket output and store
             // the continuation tokens for the next loop if so.
-            match output.is_truncated {
-                Some(true) => {
-                    let nkm  = output.next_key_marker;
-                    let nvim = output.next_version_id_marker;
-
-                    next_key_marker        = nkm;
-                    next_version_id_marker = nvim;
-                },
-                _ => break,
+            if let Some(true) = output.is_truncated {
+                next_key_marker        = output.next_key_marker;
+                next_version_id_marker = output.next_version_id_marker;
+            }
+            else {
+                break;
             }
         }
 
@@ -278,12 +275,11 @@ impl Client {
             // If the output was truncated (Some(true)), we should have a
             // next_continuation_token.
             // If it wasn't, (Some(false) | None) we're done and can break.
-            match output.is_truncated {
-                Some(true) => {
-                    let nct = output.next_continuation_token;
-                    continuation_token = nct;
-                },
-                _ => break,
+            if let Some(true) = output.is_truncated {
+                continuation_token = output.next_continuation_token;
+            }
+            else {
+                break;
             }
         }
 
@@ -344,11 +340,11 @@ impl Client {
                     .sum::<i64>() as usize;
             }
 
-            match output.is_truncated {
-                Some(true) => {
-                    part_number_marker = output.next_part_number_marker;
-                },
-                _ => break,
+            if let Some(true) = output.is_truncated {
+                part_number_marker = output.next_part_number_marker;
+            }
+            else {
+                break;
             }
         }
 
