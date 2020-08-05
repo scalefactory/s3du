@@ -49,7 +49,7 @@ impl Client {
 
         let client = S3Client::new(region.to_owned());
 
-        Client {
+        Self {
             client:          client,
             bucket_name:     bucket_name,
             object_versions: config.object_versions,

@@ -39,7 +39,7 @@ impl Client {
 
         let client = CloudWatchClient::new(region);
 
-        Client {
+        Self {
             client:      client,
             bucket_name: bucket_name,
         }
@@ -63,7 +63,8 @@ impl Client {
             None     => Vec::new(),
         };
 
-        let inputs: Vec<GetMetricStatisticsInput> = storage_types.iter()
+        let inputs: Vec<GetMetricStatisticsInput> = storage_types
+            .iter()
             .map(|storage_type| {
                 let dimensions = vec![
                     Dimension {

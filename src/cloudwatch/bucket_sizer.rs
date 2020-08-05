@@ -95,7 +95,6 @@ impl BucketSizer for Client {
 
             // Add up the size of each storage type
             size += bytes as usize;
-
         }
 
         debug!(
