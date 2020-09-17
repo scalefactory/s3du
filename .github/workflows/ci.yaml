@@ -32,10 +32,20 @@ jobs:
           profile: 'minimal'
           toolchain: '${{ matrix.toolchain-version }}'
           override: true
-      - name: 'Run Tests'
-        run: |
-          # Run cargo tests for all features
-          make test_all
+      - name: 'Run Default Feature Tests'
+        uses: 'actions-rs/cargo@v1'
+        with:
+          command: 'test'
+      - name: 'Run Cloudwatch Feature Test'
+        uses: 'actions-rs/cargo@v1'
+        with:
+          command: 'test'
+          args: '--no-default-features --features="cloudwatch"'
+      - name: 'Run S3 Feature Test'
+        uses: 'actions-rs/cargo@v1'
+        with:
+          command: 'test'
+          args: '--no-default-features --features="s3"'
   mandoc:
     name: 'Lint Man Page'
     runs-on: 'ubuntu-latest'
