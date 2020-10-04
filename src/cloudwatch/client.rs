@@ -153,7 +153,6 @@ impl Client {
                 metric_name: Some("BucketSizeBytes".into()),
                 namespace:   Some("AWS/S3".into()),
                 next_token:  next_token,
-                ..Default::default()
             };
 
             // Call the API
