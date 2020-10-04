@@ -119,10 +119,7 @@ impl Client {
 
         debug!("head_bucket output for '{}' -> '{:?}'", bucket, output);
 
-        match output {
-            Ok(_)  => true,
-            Err(_) => false,
-        }
+        output.is_ok()
     }
 
     /// Returns a bool indicating if the region is a custom region
