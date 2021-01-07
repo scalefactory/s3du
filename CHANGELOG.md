@@ -1,5 +1,11 @@
 # `s3du`
 
+## v1.1.0
+
+  - Update [Rusoto] to 0.46.0
+  - Update [Tokio] to 1.0
+  - Bump MSRV to 1.45.0
+
 ## v1.0.6
 
   - Bump MSRV to 1.41.0
@@ -46,3 +52,4 @@
 [chrono]: https://crates.io/crates/chrono
 [MinIO]: https://min.io/
 [Rusoto]: https://www.rusoto.org/
+[Tokio]: https://tokio.rs/

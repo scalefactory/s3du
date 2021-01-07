@@ -83,6 +83,7 @@ impl Client {
 
         let input = GetBucketLocationRequest {
             bucket: bucket.to_owned(),
+            ..Default::default()
         };
 
         let output   = self.client.get_bucket_location(input).await?;
@@ -113,6 +114,7 @@ impl Client {
 
         let input = HeadBucketRequest {
             bucket: bucket.into(),
+            ..Default::default()
         };
 
         let output = self.client.head_bucket(input).await;
