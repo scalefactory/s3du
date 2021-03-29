@@ -126,10 +126,7 @@ impl Client {
 
     /// Returns a bool indicating if the region is a custom region
     pub fn is_custom_client_region(&self) -> bool {
-        match self.region {
-            Region::Custom { .. } => true,
-            _                     => false,
-        }
+        matches!(self.region, Region::Custom { .. })
     }
 
     /// List in-progress multipart uploads
