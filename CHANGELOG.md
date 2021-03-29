@@ -4,7 +4,7 @@
 
   - Update [Rusoto] to 0.46.0
   - Update [Tokio] to 1.0
-  - Bump MSRV to 1.45.0
+  - Bump MSRV to 1.46.0
 
 ## v1.0.6
 
