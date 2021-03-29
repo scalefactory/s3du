@@ -72,7 +72,7 @@ version = "2.1"
 optional = true
 
 [dev-dependencies]
-pretty_assertions = "0.6"
+pretty_assertions = "0.7"
 
 [dev-dependencies.rusoto_mock]
 version = "0.46.0"
