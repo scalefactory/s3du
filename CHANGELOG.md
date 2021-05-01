@@ -5,6 +5,7 @@
   - Update [Rusoto] to 0.46.0
   - Update [Tokio] to 1.0
   - Bump MSRV to 1.46.0
+  - Add [Rayon] parallel iteration when sizing S3 objects
 
 ## v1.0.6
 
@@ -51,5 +52,6 @@
 <!-- links -->
 [chrono]: https://crates.io/crates/chrono
 [MinIO]: https://min.io/
+[Rayon]: https://crates.io/crates/rayon
 [Rusoto]: https://www.rusoto.org/
 [Tokio]: https://tokio.rs/

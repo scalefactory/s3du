@@ -8,6 +8,7 @@ use crate::common::{
     ObjectVersions,
 };
 use log::debug;
+use rayon::prelude::*;
 use rusoto_core::Region;
 use rusoto_s3::{
     HeadBucketRequest,
@@ -62,7 +63,8 @@ impl Client {
         let output = self.client.list_buckets().await?;
 
         let bucket_names = if let Some(buckets) = output.buckets {
-            buckets.iter()
+            buckets
+                .par_iter()
                 .filter_map(|b| b.name.to_owned())
                 .collect()
         }
@@ -193,7 +195,7 @@ impl Client {
             // we may or may not filter here.
             if let Some(versions) = output.versions {
                 size += versions
-                    .iter()
+                    .par_iter()
                     .filter_map(|v| {
                         // Here we take out object version selection into
                         // account. We only return v.size if we care about that
@@ -263,7 +265,7 @@ impl Client {
             // Process the contents and add up the sizes
             if let Some(contents) = output.contents {
                 size += contents
-                    .iter()
+                    .par_iter()
                     .filter_map(|o| o.size)
                     .sum::<i64>() as usize;
             }
@@ -331,7 +333,7 @@ impl Client {
 
             if let Some(parts) = output.parts {
                 size += parts
-                    .iter()
+                    .par_iter()
                     .filter_map(|p| p.size)
                     .sum::<i64>() as usize;
             }
