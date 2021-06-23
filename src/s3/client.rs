@@ -2,6 +2,12 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use aws_sdk_s3::{
+    client::Client as S3Client,
+    config::Config as S3Config,
+    model::BucketLocationConstraint,
+    Region as S3Region,
+};
 use crate::common::{
     BucketNames,
     ClientConfig,
@@ -10,16 +16,6 @@ use crate::common::{
 use log::debug;
 use rayon::prelude::*;
 use rusoto_core::Region;
-use rusoto_s3::{
-    HeadBucketRequest,
-    GetBucketLocationRequest,
-    ListMultipartUploadsRequest,
-    ListObjectsV2Request,
-    ListObjectVersionsRequest,
-    ListPartsRequest,
-    S3,
-    S3Client,
-};
 use std::str::FromStr;
 
 /// The S3 `Client`.
@@ -48,10 +44,14 @@ impl Client {
             region.name(),
         );
 
-        let client = S3Client::new(region.to_owned());
+        let s3config = S3Config::builder()
+            .region(S3Region::new(region.name().to_string()))
+            .build();
+
+        let s3client = S3Client::from_conf(s3config);
 
         Self {
-            client:          client,
+            client:          s3client,
             bucket_name:     bucket_name,
             object_versions: config.object_versions,
             region:          region,
@@ -60,7 +60,9 @@ impl Client {
 
     /// Returns a list of bucket names.
     pub async fn list_buckets(&self) -> Result<BucketNames> {
-        let output = self.client.list_buckets().await?;
+        debug!("list_buckets");
+
+        let output = self.client.list_buckets().send().await?;
 
         let bucket_names = if let Some(buckets) = output.buckets {
             buckets
@@ -71,6 +73,8 @@ impl Client {
         else {
             Vec::new()
         };
+
+        debug!("Found buckets: {:?}", bucket_names);
 
         Ok(bucket_names)
     }
@@ -83,23 +87,20 @@ impl Client {
     pub async fn get_bucket_location(&self, bucket: &str) -> Result<Region> {
         debug!("get_bucket_location for '{}'", bucket);
 
-        let input = GetBucketLocationRequest {
-            bucket: bucket.to_owned(),
-            ..Default::default()
-        };
+        let output = self.client.get_bucket_location()
+            .bucket(bucket)
+            .send()
+            .await?;
 
-        let output   = self.client.get_bucket_location(input).await?;
-        let location = output.location_constraint.expect("location");
-
-        debug!("GetBucketLocation API returned '{}'", location);
+        debug!("GetBucketLocation API returned '{:?}'", output);
 
         // Location constraints for sufficiently old buckets in S3 may not
         // quite meet expectations. These returns are badly documented and the
         // assumptions here are based on what the web console does.
-        let location = match location.as_ref() {
-            ""   => "us-east-1".to_string(),
-            "EU" => "eu-west-1".to_string(),
-            _    => location,
+        let location = match output.location_constraint {
+            Some(BucketLocationConstraint::Eu) => "eu-west-1".to_string(),
+            Some(location)                     => location.as_str().to_string(),
+            None                               => "us-east-1".to_string(),
         };
 
         let location = Region::from_str(&location)?;
@@ -114,12 +115,10 @@ impl Client {
     pub async fn head_bucket(&self, bucket: &str) -> bool {
         debug!("head_bucket for '{}'", bucket);
 
-        let input = HeadBucketRequest {
-            bucket: bucket.into(),
-            ..Default::default()
-        };
-
-        let output = self.client.head_bucket(input).await;
+        let output = self.client.head_bucket()
+            .bucket(bucket)
+            .send()
+            .await;
 
         debug!("head_bucket output for '{}' -> '{:?}'", bucket, output);
 
@@ -138,14 +137,12 @@ impl Client {
         let mut upload_id_marker = None;
 
         loop {
-            let input = ListMultipartUploadsRequest {
-                bucket:           bucket.into(),
-                key_marker:       key_marker.to_owned(),
-                upload_id_marker: upload_id_marker.to_owned(),
-                ..Default::default()
-            };
-
-            let output = self.client.list_multipart_uploads(input).await?;
+            let output = self.client.list_multipart_uploads()
+                .bucket(bucket)
+                .set_key_marker(key_marker)
+                .set_upload_id_marker(upload_id_marker)
+                .send()
+                .await?;
 
             if let Some(uploads) = output.uploads {
                 // No iterator here since we need to call an async method.
@@ -157,7 +154,7 @@ impl Client {
                 }
             }
 
-            if let Some(true) = output.is_truncated {
+            if output.is_truncated {
                 key_marker       = output.next_key_marker;
                 upload_id_marker = output.next_upload_id_marker;
             }
@@ -182,43 +179,40 @@ impl Client {
 
         // Loop until all object versions are processed
         loop {
-            let input = ListObjectVersionsRequest {
-                bucket:            bucket.into(),
-                key_marker:        next_key_marker.to_owned(),
-                version_id_marker: next_version_id_marker.to_owned(),
-                ..Default::default()
-            };
-
-            let output = self.client.list_object_versions(input).await?;
+            let output = self.client.list_object_versions()
+                .bucket(bucket)
+                .set_key_marker(next_key_marker)
+                .set_version_id_marker(next_version_id_marker)
+                .send()
+                .await?;
 
             // Depending on which object versions we're paying attention to,
             // we may or may not filter here.
             if let Some(versions) = output.versions {
                 size += versions
                     .par_iter()
-                    .filter_map(|v| {
-                        // Here we take out object version selection into
-                        // account. We only return v.size if we care about that
+                    .map(|v| {
+                        // Here we take our object version selection into
+                        // account.
+                        //
+                        // We return a size of 0 if we aren't interested in an
                         // object version.
-                        // Unwrap is hopefully safe, objects should always come
-                        // with this.
+                        //
                         // Multipart isn't handled here.
-                        let is_latest = v.is_latest.unwrap();
-
                         match self.object_versions {
                             ObjectVersions::All     => v.size,
                             ObjectVersions::Current => {
-                                if is_latest {
+                                if v.is_latest {
                                     v.size
                                 }
                                 else {
-                                    None
+                                    0
                                 }
                             },
                             ObjectVersions::Multipart => unreachable!(),
                             ObjectVersions::NonCurrent => {
-                                if is_latest {
-                                    None
+                                if v.is_latest {
+                                    0
                                 }
                                 else {
                                     v.size
@@ -226,12 +220,12 @@ impl Client {
                             },
                         }
                     })
-                    .sum::<i64>() as usize;
+                    .sum::<i32>() as usize;
             }
 
             // Check if we need to continue processing bucket output and store
             // the continuation tokens for the next loop if so.
-            if let Some(true) = output.is_truncated {
+            if output.is_truncated {
                 next_key_marker        = output.next_key_marker;
                 next_version_id_marker = output.next_version_id_marker;
             }
@@ -254,26 +248,24 @@ impl Client {
 
         // Loop until all objects are processed.
         loop {
-            let input = ListObjectsV2Request {
-                bucket:             bucket.into(),
-                continuation_token: continuation_token.to_owned(),
-                ..Default::default()
-            };
-
-            let output = self.client.list_objects_v2(input).await?;
+            let output = self.client.list_objects_v2()
+                .bucket(bucket)
+                .set_continuation_token(continuation_token)
+                .send()
+                .await?;
 
             // Process the contents and add up the sizes
             if let Some(contents) = output.contents {
                 size += contents
                     .par_iter()
-                    .filter_map(|o| o.size)
-                    .sum::<i64>() as usize;
+                    .map(|o| o.size)
+                    .sum::<i32>() as usize;
             }
 
             // If the output was truncated (Some(true)), we should have a
             // next_continuation_token.
             // If it wasn't, (Some(false) | None) we're done and can break.
-            if let Some(true) = output.is_truncated {
+            if output.is_truncated {
                 continuation_token = output.next_continuation_token;
             }
             else {
@@ -321,24 +313,22 @@ impl Client {
         let mut size               = 0;
 
         loop {
-            let input = ListPartsRequest {
-                bucket:             bucket.into(),
-                key:                key.into(),
-                part_number_marker: part_number_marker.to_owned(),
-                upload_id:          upload_id.into(),
-                ..Default::default()
-            };
-
-            let output = self.client.list_parts(input).await?;
+            let output = self.client.list_parts()
+                .bucket(bucket)
+                .key(key)
+                .set_part_number_marker(part_number_marker)
+                .upload_id(upload_id)
+                .send()
+                .await?;
 
             if let Some(parts) = output.parts {
                 size += parts
                     .par_iter()
-                    .filter_map(|p| p.size)
-                    .sum::<i64>() as usize;
+                    .map(|p| p.size)
+                    .sum::<i32>() as usize;
             }
 
-            if let Some(true) = output.is_truncated {
+            if output.is_truncated {
                 part_number_marker = output.next_part_number_marker;
             }
             else {
