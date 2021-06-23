@@ -78,9 +78,12 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::ObjectVersions;
+    use crate::common::{
+        ObjectVersions,
+        Region,
+    };
     use pretty_assertions::assert_eq;
-    use rusoto_core::Region;
+    use rusoto_core::Region as RusotoRegion;
     use rusoto_mock::{
         MockCredentialsProvider,
         MockRequestDispatcher,
@@ -111,7 +114,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::UsEast1,
+            region:          Region::new(),
         }
     }
 
@@ -142,14 +145,14 @@ mod tests {
         let s3client = S3Client::new_with(
             mock,
             MockCredentialsProvider,
-            Region::EuWest1,
+            RusotoRegion::UsEast1,
         );
 
         let mut client = Client {
             client:          s3client,
             bucket_name:     None,
             object_versions: ObjectVersions::Current,
-            region:          Region::EuWest1,
+            region:          Region::new(),
         };
 
         let buckets = Client::buckets(&mut client).await.unwrap();

@@ -374,7 +374,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::UsEast1,
+            region:          Region::new(),
         }
     }
 
@@ -400,7 +400,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: ObjectVersions::Current,
-            region:          Region::UsEast1,
+            region:          Region::new(),
         }
     }
 
@@ -446,7 +446,7 @@ mod tests {
             .await
             .unwrap();
 
-        let expected = Region::EuWest1;
+        let expected = Region::new().set_region("eu-west-1");
 
         assert_eq!(ret, expected);
     }
@@ -462,7 +462,7 @@ mod tests {
             .await
             .unwrap();
 
-        let expected = Region::EuWest1;
+        let expected = Region::new().set_region("EU");
 
         assert_eq!(ret, expected);
     }
@@ -478,7 +478,7 @@ mod tests {
             .await
             .unwrap();
 
-        let expected = Region::UsEast1;
+        let expected = Region::new();
 
         assert_eq!(ret, expected);
     }
