@@ -46,6 +46,10 @@ tokio = "1.0"
 git = "https://github.com/awslabs/aws-sdk-rust"
 tag = "v0.0.9-alpha"
 
+[dependencies.aws-types]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.9-alpha"
+
 [dependencies.chrono]
 version = "0.4"
 optional = true

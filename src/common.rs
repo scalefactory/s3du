@@ -17,6 +17,10 @@ mod client_mode;
 /// `HumanSize` trait for `usize` used to output friendly bucket sizes.
 mod human_size;
 
+/// `Region` struct wraps a basic string and allows us to return appropriate
+/// AWS types when needed.
+mod region;
+
 /// `SizeUnit` enum is used to select how the bucket sizes will be output.
 mod size_unit;
 
@@ -30,6 +34,7 @@ pub use bucket_sizer::*;
 pub use client_config::*;
 pub use client_mode::*;
 pub use human_size::*;
+pub use region::*;
 pub use size_unit::*;
 
 #[cfg(feature = "s3")]

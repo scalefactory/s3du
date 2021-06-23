@@ -19,6 +19,8 @@ use rusoto_cloudwatch::{
     ListMetricsInput,
     Metric,
 };
+use rusoto_core::region::Region;
+use std::str::FromStr;
 
 /// A CloudWatch `Client`
 pub struct Client {
@@ -36,6 +38,10 @@ impl Client {
         let region      = config.region;
 
         debug!("new: Creating CloudWatchClient in region '{}'", region.name());
+
+        // Turn the AWS type into a Rusoto region, ths is temporary until we
+        // get CloudWatch support in the AWS SDK.
+        let region = Region::from_str(region.name()).unwrap();
 
         let client = CloudWatchClient::new(region);
 

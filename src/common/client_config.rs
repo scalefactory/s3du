@@ -1,8 +1,10 @@
 // ClientConfig
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use rusoto_core::Region;
-use super::ClientMode;
+use super::{
+    ClientMode,
+    Region,
+};
 
 #[cfg(feature = "s3")]
 use super::ObjectVersions;
@@ -48,7 +50,7 @@ impl Default for ClientConfig {
     /// ClientConfig {
     ///     bucket_name:     None,
     ///     mode:            ClientMode::CloudWatch,
-    ///     region:          Region::UsEast1,
+    ///     region:          Region::new(),
     ///     object_versions: ObjectVersions::Current,
     /// }
     /// ```
@@ -62,7 +64,7 @@ impl Default for ClientConfig {
         Self {
             bucket_name: None,
             mode:        mode,
-            region:      Region::UsEast1,
+            region:      Region::new(),
             #[cfg(feature = "s3")]
             object_versions: ObjectVersions::Current,
         }

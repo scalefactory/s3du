@@ -6,17 +6,15 @@ use aws_sdk_s3::{
     client::Client as S3Client,
     config::Config as S3Config,
     model::BucketLocationConstraint,
-    Region as S3Region,
 };
 use crate::common::{
     BucketNames,
     ClientConfig,
     ObjectVersions,
+    Region,
 };
 use log::debug;
 use rayon::prelude::*;
-use rusoto_core::Region;
-use std::str::FromStr;
 
 /// The S3 `Client`.
 pub struct Client {
@@ -45,7 +43,7 @@ impl Client {
         );
 
         let s3config = S3Config::builder()
-            .region(S3Region::new(region.name().to_string()))
+            .region(&region)
             .build();
 
         let s3client = S3Client::from_conf(s3config);
@@ -103,7 +101,7 @@ impl Client {
             None                               => "us-east-1".to_string(),
         };
 
-        let location = Region::from_str(&location)?;
+        let location = Region::new().set_region(&location);
 
         debug!("Final location: {:?}", location);
 
@@ -127,7 +125,10 @@ impl Client {
 
     /// Returns a bool indicating if the region is a custom region
     pub fn is_custom_client_region(&self) -> bool {
-        matches!(self.region, Region::Custom { .. })
+        let constraint = BucketLocationConstraint::from(self.region.name());
+
+        // We assume that any Unknown location constraint is a custom region
+        matches!(constraint, BucketLocationConstraint::Unknown(_))
     }
 
     /// List in-progress multipart uploads
