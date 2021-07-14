@@ -6,7 +6,8 @@ use crate::common::{
     StorageTypes,
 };
 use log::debug;
-use rusoto_cloudwatch::Metric;
+//use rusoto_cloudwatch::Metric;
+use aws_sdk_cloudwatch::model::Metric;
 use std::collections::HashMap;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
@@ -59,9 +60,15 @@ impl From<Vec<Metric>> for BucketMetrics {
 
             // Process the dimensions, taking the bucket name and storage types
             for dimension in dimensions {
-                match dimension.name.as_ref() {
-                    "BucketName"  => name         = dimension.value,
-                    "StorageType" => storage_type = dimension.value,
+                // Extract the dimension name
+                let dname = match dimension.name {
+                    Some(n) => n,
+                    None    => continue,
+                };
+
+                match dname.as_ref() {
+                    "BucketName"  => name         = dimension.value.unwrap(),
+                    "StorageType" => storage_type = dimension.value.unwrap(),
                     _             => {},
                 }
             }

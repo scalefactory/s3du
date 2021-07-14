@@ -6,7 +6,6 @@ use anyhow::{
     Result,
 };
 use async_trait::async_trait;
-use chrono::prelude::*;
 use crate::common::{
     Bucket,
     Buckets,
@@ -71,17 +70,8 @@ impl BucketSizer for Client {
             // than a single datapoint, so we must sort them.
             // We sort so that the latest datapoint is at index 0 of the vec.
             datapoints.sort_by(|a, b| {
-                let a_timestamp: DateTime<Utc> = a.timestamp
-                    .as_ref()
-                    .expect("Couldn't unwrap a_timestamp")
-                    .parse()
-                    .expect("Couldn't parse a_timestamp");
-
-                let b_timestamp: DateTime<Utc> = b.timestamp
-                    .as_ref()
-                    .expect("Couldn't unwrap b_timestamp")
-                    .parse()
-                    .expect("Couldn't parse b_timestamp");
+                let a_timestamp = a.timestamp.unwrap().to_chrono();
+                let b_timestamp = b.timestamp.unwrap().to_chrono();
 
                 b_timestamp.cmp(&a_timestamp)
             });

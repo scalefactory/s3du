@@ -27,10 +27,10 @@ exclude = [
 default = ["cloudwatch", "s3"]
 
 # Only CloudWatch support
-cloudwatch = ["chrono", "rusoto_cloudwatch"]
+cloudwatch = ["aws-sdk-cloudwatch", "chrono", "rusoto_cloudwatch"]
 
 # Only S3 support
-s3 = ["rusoto_s3", "url"]
+s3 = ["aws-sdk-s3", "url"]
 
 [dependencies]
 anyhow = "1.0"
@@ -42,13 +42,23 @@ pretty_env_logger = "0.4"
 rayon = "1.5"
 tokio = "1.0"
 
+[dependencies.aws-hyper]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.11-alpha"
+
+[dependencies.aws-sdk-cloudwatch]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.11-alpha"
+optional = true
+
 [dependencies.aws-sdk-s3]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.9-alpha"
+tag = "v0.0.11-alpha"
+optional = true
 
 [dependencies.aws-types]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.9-alpha"
+tag = "v0.0.11-alpha"
 
 [dependencies.chrono]
 version = "0.4"
@@ -60,30 +70,43 @@ default-features = false
 features = ["color", "suggestions"]
 
 [dependencies.rusoto_cloudwatch]
-version = "0.46.0"
+version = "0.47.0"
 default-features = false
 features = ["rustls"]
 optional = true
 
 [dependencies.rusoto_core]
-version = "0.46.0"
+version = "0.47.0"
 default-features = false
 features = ["rustls"]
 
-[dependencies.rusoto_s3]
-version = "0.46.0"
-default-features = false
-features = ["rustls"]
-optional = true
+#[dependencies.rusoto_s3]
+#version = "0.46.0"
+#default-features = false
+#features = ["rustls"]
+#optional = true
+
+[dependencies.smithy-client]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.11-alpha"
 
 [dependencies.url]
 version = "2.1"
 optional = true
 
 [dev-dependencies]
+http = "0.2"
 pretty_assertions = "0.7"
 
+[dev-dependencies.aws-hyper]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.11-alpha"
+
 [dev-dependencies.rusoto_mock]
-version = "0.46.0"
+version = "0.47.0"
 default-features = false
 features = ["rustls"]
+
+[dev-dependencies.smithy-http]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.11-alpha"
