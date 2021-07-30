@@ -44,21 +44,21 @@ tokio = "1.0"
 
 [dependencies.aws-hyper]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"
 
 [dependencies.aws-sdk-cloudwatch]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"
 optional = true
 
 [dependencies.aws-sdk-s3]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"
 optional = true
 
 [dependencies.aws-types]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"
 
 [dependencies.chrono]
 version = "0.4"
@@ -88,7 +88,7 @@ features = ["rustls"]
 
 [dependencies.smithy-client]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"
 
 [dependencies.url]
 version = "2.1"
@@ -100,7 +100,7 @@ pretty_assertions = "0.7"
 
 [dev-dependencies.aws-hyper]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"
 
 [dev-dependencies.rusoto_mock]
 version = "0.47.0"
@@ -109,4 +109,4 @@ features = ["rustls"]
 
 [dev-dependencies.smithy-http]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.11-alpha"
+tag = "v0.0.13-alpha"

@@ -6,7 +6,6 @@ use crate::common::{
     StorageTypes,
 };
 use log::debug;
-//use rusoto_cloudwatch::Metric;
 use aws_sdk_cloudwatch::model::Metric;
 use std::collections::HashMap;
 
