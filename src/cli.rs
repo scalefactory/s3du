@@ -1,6 +1,10 @@
 // cli: This module is responsible for command line interface parsing
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+use aws_types::region::{
+    EnvironmentProvider,
+    ProvideRegion,
+};
 use clap::{
     crate_authors,
     crate_description,
@@ -12,11 +16,12 @@ use clap::{
 };
 use lazy_static::lazy_static;
 use log::debug;
-use rusoto_core::Region;
-use std::str::FromStr;
 
 #[cfg(feature = "s3")]
 use url::Url;
+
+// Our fallback default region if we fail to find a region in the environment
+const FALLBACK_REGION: &str = "us-east-1";
 
 // This catches cases where we've compiled with either:
 //   - Only "cloudwatch"
@@ -42,10 +47,17 @@ lazy_static! {
     ///   - `AWS_DEFAULT_REGION` environment variable
     ///   - `AWS_REGION` environment variable
     ///   - Falls back to `us-east-1` if regions in the environment variables
-    ///     are malformed or unknown to Rusoto.
+    ///     are unavailable
     static ref DEFAULT_REGION: String = {
-        let region = Region::default();
-        region.name().into()
+        // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
+        let env    = EnvironmentProvider::new();
+        let region = env.region();
+
+        // If we don't find a region, we'll fall back to our FALLBACK_REGION
+        region.map_or_else(
+            || FALLBACK_REGION.to_string(),
+            |r| r.as_ref().to_string(),
+        )
     };
 }
 
@@ -79,17 +91,6 @@ const OBJECT_VERSIONS: &[&str] = &[
     "multipart",
     "non-current",
 ];
-
-/// Ensures that the AWS region that we're passed is valid.
-///
-/// There's a chance that this can be incorrect if AWS releases a region and
-/// Rusoto lags behind on updating the Region list in `rusoto_core`.
-fn is_valid_aws_region(s: String) -> Result<(), String> {
-    match Region::from_str(&s) {
-        Ok(_)  => Ok(()),
-        Err(e) => Err(e.to_string()),
-    }
-}
 
 /// Ensures that a given bucket name is valid.
 ///
@@ -190,7 +191,6 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .help("Set the AWS region to create the client in.")
                 .takes_value(true)
                 .default_value(&DEFAULT_REGION)
-                .validator(is_valid_aws_region)
         )
         .arg(
             Arg::with_name("UNIT")
