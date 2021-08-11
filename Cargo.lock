@@ -1234,19 +1234,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rusoto_s3"
-version = "0.47.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "048c2fe811a823ad5a9acc976e8bf4f1d910df719dcf44b15c3e96c5b7a51027"
-dependencies = [
- "async-trait",
- "bytes",
- "futures",
- "rusoto_core",
- "xml-rs",
-]
-
-[[package]]
 name = "rusoto_signature"
 version = "0.47.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1332,9 +1319,7 @@ dependencies = [
  "pretty_env_logger",
  "rayon",
  "rusoto_cloudwatch",
- "rusoto_core",
  "rusoto_mock",
- "rusoto_s3",
  "smithy-client",
  "smithy-http",
  "tokio",

@@ -90,17 +90,7 @@ version = "0.47.0"
 default-features = false
 features = ["rustls"]
 
-[dev-dependencies.rusoto_core]
-version = "0.47.0"
-default-features = false
-features = ["rustls"]
-
 [dev-dependencies.rusoto_mock]
-version = "0.47.0"
-default-features = false
-features = ["rustls"]
-
-[dev-dependencies.rusoto_s3]
 version = "0.47.0"
 default-features = false
 features = ["rustls"]
