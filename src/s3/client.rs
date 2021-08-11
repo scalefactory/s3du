@@ -2,7 +2,6 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use aws_hyper::DynConnector;
 use aws_sdk_s3::{
     client::Client as S3Client,
     config::Config as S3Config,
@@ -21,7 +20,7 @@ use rayon::prelude::*;
 /// The S3 `Client`.
 pub struct Client {
     /// The Rusoto `S3Client`.
-    pub client: S3Client, //DynConnector,
+    pub client: S3Client,
 
     /// Selected bucket name, if any.
     pub bucket_name: Option<String>,
@@ -51,7 +50,7 @@ impl Client {
         let s3client = S3Client::from_conf(s3config);
 
         Self {
-            client:          s3client, //DynConnector::new(s3client),
+            client:          s3client,
             bucket_name:     bucket_name,
             object_versions: config.object_versions,
             region:          region,
@@ -346,59 +345,80 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aws_hyper::test_connection::TestConnection;
+    use aws_sdk_s3::Credentials;
     use pretty_assertions::assert_eq;
-    use rusoto_mock::{
-        //MockCredentialsProvider,
-        MockRequestDispatcher,
-        MockResponseReader,
-        //MultipleMockRequestDispatcher,
-        ReadMockResponse,
-    };
+    use smithy_client::erase::DynConnector;
+    use smithy_client::test_connection::TestConnection;
     use smithy_http::body::SdkBody;
+    use std::fs;
+    use std::path::Path;
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
-    //fn mock_client(
-    //    data_file: Option<&str>,
-    //    versions:  ObjectVersions,
-    //) -> Client {
-    //    let data = match data_file {
-    //        None    => "".to_string(),
-    //        Some(d) => MockResponseReader::read_response("test-data", d.into()),
-    //    };
+    fn mock_client(
+        data_file: Vec<&str>,
+        versions:  ObjectVersions,
+    ) -> Client {
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
 
-    //    let client = S3Client::new_with(
-    //        MockRequestDispatcher::default().with_body(&data),
-    //        MockCredentialsProvider,
-    //        Default::default()
-    //    );
+        let conf = S3Config::builder()
+            .credentials_provider(creds)
+            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .build();
 
-    //    Client {
-    //        client:          client,
-    //        bucket_name:     None,
-    //        object_versions: versions,
-    //        region:          Region::new(),
-    //    }
-    //}
+        // Get a vec of events based on the given data_files
+        let events = data_file
+            .iter()
+            .map(|d| {
+                let path = Path::new("test-data").join(d);
+                let data = fs::read_to_string(path).unwrap();
 
-    // Return a MockRequestDispatcher with a body given by the data_file.
-    fn dispatcher_with_body(data_file: &str) -> MockRequestDispatcher {
-        let data = MockResponseReader::read_response("test-data", data_file);
+                // Events
+                (
+                    // Request
+                    http::Request::builder()
+                        .body(SdkBody::from("request body"))
+                        .unwrap(),
 
-        MockRequestDispatcher::default().with_body(&data)
+                    // Response
+                    http::Response::builder()
+                        .status(200)
+                        .body(SdkBody::from(data))
+                        .unwrap(),
+                )
+            })
+            .collect();
+
+        let conn = TestConnection::new(events);
+        let conn = DynConnector::new(conn);
+
+        let client = S3Client::from_conf_conn(conf, conn);
+
+        Client {
+            client:          client,
+            bucket_name:     None,
+            object_versions: versions,
+            region:          Region::new().set_region("eu-west-1"),
+        }
     }
 
     // Create a mock client that returns a specific status code and empty
     // response body.
-    fn mock_client_with_status<C>(status: u16) -> aws_hyper::Client<C, AwsMiddleware> {
-        //let dispatcher = MockRequestDispatcher::with_status(status);
+    fn mock_client_with_status(status: u16) -> Client {
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
 
-        //let client = S3Client::new_with(
-        //    dispatcher,
-        //    MockCredentialsProvider,
-        //    Default::default()
-        //);
+        let conf = S3Config::builder()
+            .credentials_provider(creds)
+            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .build();
 
         let events = vec![
             (
@@ -416,18 +436,16 @@ mod tests {
         ];
 
         let conn = TestConnection::new(events);
-        let config = S3Config::builder().build();
-        let client = aws_hyper::Client::new(conn.clone());
-        //let client = S3Client::from_conf_conn(config, conn);
-        //let client = DynConnector::new(client);
+        let conn = DynConnector::new(conn);
 
-        //Client {
-        //    client:          client,
-        //    bucket_name:     None,
-        //    object_versions: ObjectVersions::Current,
-        //    region:          Region::new(),
-        //}
-        client
+        let client = S3Client::from_conf_conn(conf, conn);
+
+        Client {
+            client:          client,
+            bucket_name:     None,
+            object_versions: ObjectVersions::Current,
+            region:          Region::new().set_region("eu-west-1"),
+        }
     }
 
     #[tokio::test]
@@ -443,7 +461,7 @@ mod tests {
             let expected         = test.1;
 
             let client = mock_client_with_status(status_code);
-            let ret    = Client::head_bucket(&client, "test-bucket").await;
+            let ret    = client.head_bucket("test-bucket").await;
 
             assert_eq!(ret, expected);
         }
@@ -457,165 +475,165 @@ mod tests {
     //    );
 
     //    let ret = Client::get_bucket_location(&client, "test-bucket").await;
+    //    println!("{:?}", ret);
 
     //    assert!(ret.is_err());
     //}
 
-    //#[tokio::test]
-    //async fn test_get_bucket_location_ok() {
-    //    let client = mock_client(
-    //        Some("s3-get-bucket-location.xml"),
-    //        ObjectVersions::Current,
-    //    );
+    #[tokio::test]
+    async fn test_get_bucket_location_ok() {
+        let client = mock_client(
+            vec!["s3-get-bucket-location.xml"],
+            ObjectVersions::Current,
+        );
 
-    //    let ret = Client::get_bucket_location(&client, "test-bucket")
-    //        .await
-    //        .unwrap();
+        let ret = client.get_bucket_location("test-bucket")
+            .await
+            .unwrap();
 
-    //    let expected = Region::new().set_region("eu-west-1");
+        let expected = Region::new().set_region("eu-west-1");
 
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 
-    //#[tokio::test]
-    //async fn test_get_bucket_location_ok_eu() {
-    //    let client = mock_client(
-    //        Some("s3-get-bucket-location-eu.xml"),
-    //        ObjectVersions::Current,
-    //    );
+    #[tokio::test]
+    async fn test_get_bucket_location_ok_eu() {
+        let client = mock_client(
+            vec!["s3-get-bucket-location-eu.xml"],
+            ObjectVersions::Current,
+        );
 
-    //    let ret = Client::get_bucket_location(&client, "test-bucket")
-    //        .await
-    //        .unwrap();
+        let ret = client.get_bucket_location("test-bucket")
+            .await
+            .unwrap();
 
-    //    let expected = Region::new().set_region("EU");
+        let expected = Region::new().set_region("eu-west-1");
 
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 
-    //#[tokio::test]
-    //async fn test_get_bucket_location_ok_null() {
-    //    let client = mock_client(
-    //        Some("s3-get-bucket-location-null.xml"),
-    //        ObjectVersions::Current,
-    //    );
+    #[tokio::test]
+    async fn test_get_bucket_location_ok_null() {
+        let client = mock_client(
+            vec!["s3-get-bucket-location-null.xml"],
+            ObjectVersions::Current,
+        );
 
-    //    let ret = Client::get_bucket_location(&client, "test-bucket")
-    //        .await
-    //        .unwrap();
+        let ret = client.get_bucket_location("test-bucket")
+            .await
+            .unwrap();
 
-    //    let expected = Region::new();
+        let expected = Region::new().set_region("");
 
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 
-    //#[tokio::test]
-    //async fn test_list_buckets() {
-    //    let client = mock_client(
-    //        Some("s3-list-buckets.xml"),
-    //        ObjectVersions::Current,
-    //    );
+    #[tokio::test]
+    async fn test_list_buckets() {
+        let client = mock_client(
+            vec!["s3-list-buckets.xml"],
+            ObjectVersions::Current,
+        );
 
-    //    let mut ret = Client::list_buckets(&client).await.unwrap();
-    //    ret.sort();
+        let mut ret = client.list_buckets().await.unwrap();
+        ret.sort();
 
-    //    let expected: Vec<String> = vec![
-    //        "a-bucket-name".into(),
-    //        "another-bucket-name".into(),
-    //    ];
+        let expected: Vec<String> = vec![
+            "a-bucket-name".into(),
+            "another-bucket-name".into(),
+        ];
 
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 
-    //#[tokio::test]
-    //async fn test_size_multipart_uploads() {
-    //    let expected = 204800;
+    #[tokio::test]
+    async fn test_size_multipart_uploads() {
+        let expected = 204_800;
 
-    //    let mock = MultipleMockRequestDispatcher::new(vec![
-    //        dispatcher_with_body("s3-list-multipart-uploads.xml"),
-    //        dispatcher_with_body("s3-list-parts.xml"),
-    //    ]);
+        let data_files = vec![
+            "s3-list-multipart-uploads.xml",
+            "s3-list-parts.xml",
+        ];
 
-    //    let s3client = S3Client::new_with(
-    //        mock,
-    //        MockCredentialsProvider,
-    //        Default::default(),
-    //    );
+        let client = mock_client(
+            data_files,
+            ObjectVersions::Current,
+        );
 
-    //    let mut client = Client {
-    //        client:          s3client,
-    //        bucket_name:     Some("test-bucket".into()),
-    //        object_versions: ObjectVersions::Current,
-    //        region:          Default::default(),
-    //    };
+        let size = client.size_multipart_uploads("test-bucket").await.unwrap();
 
-    //    let size = Client::size_multipart_uploads(
-    //        &mut client,
-    //        "test-bucket",
-    //    ).await.unwrap();
+        assert_eq!(size, expected);
+    }
 
-    //    assert_eq!(size, expected);
-    //}
+    #[tokio::test]
+    async fn test_size_objects() {
+        let tests = vec![
+            (
+                ObjectVersions::All,
+                805_532,
+                vec![
+                    "s3-list-multipart-uploads.xml",
+                    "s3-list-parts.xml",
+                    "s3-list-object-versions.xml",
+                ],
+            ),
+            (
+                ObjectVersions::Current,
+                33_792,
+                vec![
+                    "s3-list-objects.xml",
+                ],
+            ),
+            (
+                ObjectVersions::Multipart,
+                204_800,
+                vec![
+                    "s3-list-multipart-uploads.xml",
+                    "s3-list-parts.xml",
+                ],
+            ),
+            (
+                ObjectVersions::NonCurrent,
+                166_498,
+                vec![
+                    "s3-list-object-versions.xml",
+                ],
+            ),
+        ];
 
-    //#[tokio::test]
-    //async fn test_size_objects_current() {
-    //    let mut client = mock_client(
-    //        Some("s3-list-objects.xml"),
-    //        ObjectVersions::Current,
-    //    );
+        for test in tests {
+            let versions      = test.0;
+            let expected_size = test.1;
+            let data_files    = test.2;
 
-    //    let ret = Client::size_objects(&mut client, "test-bucket")
-    //        .await
-    //        .unwrap();
+            let client = mock_client(
+                data_files,
+                versions,
+            );
 
-    //    let expected = 33_792;
+            let ret = client.size_objects("test-bucket")
+                .await
+                .unwrap();
 
-    //    assert_eq!(ret, expected);
-    //}
+            assert_eq!(ret, expected_size);
+        }
+    }
 
-    //#[tokio::test]
-    //async fn test_size_objects_all_noncurrent() {
-    //    // Current expects 0 here because our mock client won't return any
-    //    // objects. This is handled in another test.
-    //    let tests = vec![
-    //        (ObjectVersions::All,        600_732),
-    //        (ObjectVersions::Current,    0),
-    //        (ObjectVersions::NonCurrent, 166_498),
-    //    ];
+    #[tokio::test]
+    async fn test_size_parts() {
+        let client = mock_client(
+            vec!["s3-list-parts.xml"],
+            ObjectVersions::Current,
+        );
 
-    //    for test in tests {
-    //        let versions      = test.0;
-    //        let expected_size = test.1;
+        let ret = client.size_parts(
+            "test-bucket",
+            "test.zip",
+            "abc123",
+        ).await.unwrap();
 
-    //        let mut client = mock_client(
-    //            Some("s3-list-object-versions.xml"),
-    //            versions,
-    //        );
+        let expected = 1024 * 100 * 2;
 
-    //        let ret = Client::size_objects(&mut client, "test-bucket")
-    //            .await
-    //            .unwrap();
-
-    //        assert_eq!(ret, expected_size);
-    //    }
-    //}
-
-    //#[tokio::test]
-    //async fn test_size_parts() {
-    //    let client = mock_client(
-    //        Some("s3-list-parts.xml"),
-    //        ObjectVersions::Current,
-    //    );
-
-    //    let ret = Client::size_parts(
-    //        &client,
-    //        "test-bucket",
-    //        "test.zip",
-    //        "abc123",
-    //    ).await.unwrap();
-
-    //    let expected = 1024 * 100 * 2;
-
-    //    assert_eq!(ret, expected);
-    //}
+        assert_eq!(ret, expected);
+    }
 }
