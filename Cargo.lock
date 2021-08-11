@@ -36,6 +36,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "595d3cfa7a60d4555cb5067b99f07142a08ea778de5cf993f7b75c7d8fabc486"
 
 [[package]]
+name = "assert-json-diff"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4259cbe96513d2f1073027a259fc2ca917feb3026a5a8d984e3628e490255cc0"
+dependencies = [
+ "extend",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -66,9 +77,11 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 [[package]]
 name = "aws-auth"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-types",
+ "pin-project",
+ "smithy-async",
  "smithy-http",
  "tokio",
  "tracing",
@@ -78,7 +91,7 @@ dependencies = [
 [[package]]
 name = "aws-endpoint"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-types",
  "http",
@@ -89,7 +102,7 @@ dependencies = [
 [[package]]
 name = "aws-http"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-types",
  "http",
@@ -102,7 +115,7 @@ dependencies = [
 [[package]]
 name = "aws-hyper"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-auth",
  "aws-endpoint",
@@ -126,8 +139,8 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-cloudwatch"
-version = "0.0.13-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+version = "0.0.14-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-auth",
  "aws-endpoint",
@@ -145,8 +158,8 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-s3"
-version = "0.0.13-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+version = "0.0.14-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-auth",
  "aws-endpoint",
@@ -165,7 +178,7 @@ dependencies = [
 [[package]]
 name = "aws-sig-auth"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "aws-auth",
  "aws-sigv4",
@@ -194,7 +207,7 @@ dependencies = [
 [[package]]
 name = "aws-types"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "lazy_static",
  "rustc_version",
@@ -330,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-deque"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94af6efb46fef72616855b036a624cf27ba656ffc9be1b9a3c931cfc7749a9a9"
+checksum = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
 dependencies = [
  "cfg-if",
  "crossbeam-epoch",
@@ -444,6 +457,18 @@ dependencies = [
  "log",
  "regex",
  "termcolor",
+]
+
+[[package]]
+name = "extend"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f47da3a72ec598d9c8937a7ebca8962a5c7a1f28444e38c2b33c771ba3f55f05"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -649,9 +674,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60daa14be0e0786db0f03a9e57cb404c9d756eed2b6c62b9ea98ec5743ec75a9"
+checksum = "399c583b2979440c60be0821a6199eca73bc3c8dcd9d070d75ac726e2c6186e5"
 dependencies = [
  "bytes",
  "http",
@@ -764,9 +789,9 @@ checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
 
 [[package]]
 name = "js-sys"
-version = "0.3.51"
+version = "0.3.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83bdfbace3a0e81a4253f73b49e960b053e396a11012cbd49b9b74d6a2b67062"
+checksum = "ce791b7ca6638aae45be056e068fc756d871eb3b3b10b8efa62d1c9cec616752"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -779,9 +804,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.98"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
+checksum = "a7f823d141fe0a24df1e23b4af4e3c7ba9e5966ec514ea068c93024aa7deb765"
 
 [[package]]
 name = "log"
@@ -978,6 +1003,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "proc-macro-error"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
+dependencies = [
+ "proc-macro-error-attr",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "version_check",
+]
+
+[[package]]
+name = "proc-macro-error-attr"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "version_check",
+]
+
+[[package]]
 name = "proc-macro-hack"
 version = "0.5.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -996,6 +1045,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c7ed8b8c7b886ea3ed7dde405212185f423ab44682667c8c6dd14aa1d9f6612"
 dependencies = [
  "unicode-xid",
+]
+
+[[package]]
+name = "protocol-test-helpers"
+version = "0.1.0"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
+dependencies = [
+ "assert-json-diff",
+ "http",
+ "pretty_assertions",
+ "regex",
+ "roxmltree",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -1040,9 +1103,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.9"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ab49abadf3f9e1c4bc499e8845e152ad87d2ad2d30371841171169e9d75feee"
+checksum = "8383f39639269cde97d255a32bdb68c047337295414940c68bdd30c2e13203ff"
 dependencies = [
  "bitflags",
 ]
@@ -1087,6 +1150,15 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi",
+]
+
+[[package]]
+name = "roxmltree"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "921904a62e410e37e215c40381b7117f830d9d89ba60ab5236170541dd25646b"
+dependencies = [
+ "xmlparser",
 ]
 
 [[package]]
@@ -1159,6 +1231,19 @@ dependencies = [
  "rusoto_core",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "rusoto_s3"
+version = "0.47.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "048c2fe811a823ad5a9acc976e8bf4f1d910df719dcf44b15c3e96c5b7a51027"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures",
+ "rusoto_core",
+ "xml-rs",
 ]
 
 [[package]]
@@ -1249,6 +1334,7 @@ dependencies = [
  "rusoto_cloudwatch",
  "rusoto_core",
  "rusoto_mock",
+ "rusoto_s3",
  "smithy-client",
  "smithy-http",
  "tokio",
@@ -1306,24 +1392,24 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f3aac57ee7f3272d8395c6e4f502f434f0e289fcd62876f70daa008c20dcabe"
+checksum = "568a8e6258aa33c13358f81fd834adb854c6f7c9468520910a9b1e8fac068012"
 
 [[package]]
 name = "serde"
-version = "1.0.126"
+version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
+checksum = "f03b9878abf6d14e6779d3f24f07b2cfa90352cfec4acc5aab8f1ac7f146fae8"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.126"
+version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "963a7dbc9895aeac7ac90e74f34a5d5261828f79df35cbed41e10189d3804d43"
+checksum = "a024926d3432516606328597e0f224a51355a493b49fdd67e9209187cbe55ecc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1383,14 +1469,23 @@ dependencies = [
 
 [[package]]
 name = "slab"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f173ac3d1a7e3b28003f40de0b5ce7fe2710f9b9dc3fc38664cebee46b3b6527"
+checksum = "c307a32c1c5c437f38c7fd45d753050587732ba8628319fbdf12a7e289ccc590"
+
+[[package]]
+name = "smithy-async"
+version = "0.1.0"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
+dependencies = [
+ "pin-project-lite",
+ "tokio",
+]
 
 [[package]]
 name = "smithy-client"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "bytes",
  "fastrand",
@@ -1399,6 +1494,7 @@ dependencies = [
  "hyper",
  "hyper-rustls",
  "pin-project",
+ "protocol-test-helpers",
  "smithy-http",
  "smithy-http-tower",
  "smithy-types",
@@ -1410,7 +1506,7 @@ dependencies = [
 [[package]]
 name = "smithy-http"
 version = "0.0.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "bytes",
  "bytes-utils",
@@ -1430,7 +1526,7 @@ dependencies = [
 [[package]]
 name = "smithy-http-tower"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "bytes",
  "http",
@@ -1444,10 +1540,8 @@ dependencies = [
 [[package]]
 name = "smithy-query"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
- "itoa",
- "ryu",
  "smithy-types",
  "urlencoding",
 ]
@@ -1455,15 +1549,18 @@ dependencies = [
 [[package]]
 name = "smithy-types"
 version = "0.0.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "chrono",
+ "itoa",
+ "num-integer",
+ "ryu",
 ]
 
 [[package]]
 name = "smithy-xml"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
 dependencies = [
  "thiserror",
  "xmlparser",
@@ -1776,9 +1873,9 @@ checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.74"
+version = "0.2.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d54ee1d4ed486f78874278e63e4069fc1ab9f6a18ca492076ffb90c5eb2997fd"
+checksum = "b608ecc8f4198fe8680e2ed18eccab5f0cd4caaf3d83516fa5fb2e927fda2586"
 dependencies = [
  "cfg-if",
  "wasm-bindgen-macro",
@@ -1786,9 +1883,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.74"
+version = "0.2.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b33f6a0694ccfea53d94db8b2ed1c3a8a4c86dd936b13b9f0a15ec4a451b900"
+checksum = "580aa3a91a63d23aac5b6b267e2d13cb4f363e31dce6c352fca4752ae12e479f"
 dependencies = [
  "bumpalo",
  "lazy_static",
@@ -1801,9 +1898,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.74"
+version = "0.2.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "088169ca61430fe1e58b8096c24975251700e7b1f6fd91cc9d59b04fb9b18bd4"
+checksum = "171ebf0ed9e1458810dfcb31f2e766ad6b3a89dbda42d8901f2b268277e5f09c"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -1811,9 +1908,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.74"
+version = "0.2.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be2241542ff3d9f241f5e2cb6dd09b37efe786df8851c54957683a49f0987a97"
+checksum = "6c2657dd393f03aa2a659c25c6ae18a13a4048cebd220e147933ea837efc589f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1824,15 +1921,15 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.74"
+version = "0.2.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7cff876b8f18eed75a66cf49b65e7f967cb354a7aa16003fb55dbfd25b44b4f"
+checksum = "2e0c4a743a309662d45f4ede961d7afa4ba4131a59a639f29b0069c3798bbcc2"
 
 [[package]]
 name = "web-sys"
-version = "0.3.51"
+version = "0.3.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e828417b379f3df7111d3a2a9e5753706cae29c41f7c4029ee9fd77f3e09e582"
+checksum = "01c70a82d842c9979078c772d4a1344685045f1a5628f677c2b2eab4dd7d2696"
 dependencies = [
  "js-sys",
  "wasm-bindgen",

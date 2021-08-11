@@ -27,7 +27,7 @@ exclude = [
 default = ["cloudwatch", "s3"]
 
 # Only CloudWatch support
-cloudwatch = ["aws-sdk-cloudwatch", "chrono", "rusoto_cloudwatch"]
+cloudwatch = ["aws-sdk-cloudwatch", "chrono"]
 
 # Only S3 support
 s3 = ["aws-sdk-s3", "url"]
@@ -44,21 +44,21 @@ tokio = "1.0"
 
 [dependencies.aws-hyper]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
 
 [dependencies.aws-sdk-cloudwatch]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
 optional = true
 
 [dependencies.aws-sdk-s3]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
 optional = true
 
 [dependencies.aws-types]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
 
 [dependencies.chrono]
 version = "0.4"
@@ -69,26 +69,9 @@ version = "2.33"
 default-features = false
 features = ["color", "suggestions"]
 
-[dependencies.rusoto_cloudwatch]
-version = "0.47.0"
-default-features = false
-features = ["rustls"]
-optional = true
-
-[dependencies.rusoto_core]
-version = "0.47.0"
-default-features = false
-features = ["rustls"]
-
-#[dependencies.rusoto_s3]
-#version = "0.46.0"
-#default-features = false
-#features = ["rustls"]
-#optional = true
-
 [dependencies.smithy-client]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
 
 [dependencies.url]
 version = "2.1"
@@ -100,13 +83,33 @@ pretty_assertions = "0.7"
 
 [dev-dependencies.aws-hyper]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
+
+[dev-dependencies.rusoto_cloudwatch]
+version = "0.47.0"
+default-features = false
+features = ["rustls"]
+
+[dev-dependencies.rusoto_core]
+version = "0.47.0"
+default-features = false
+features = ["rustls"]
 
 [dev-dependencies.rusoto_mock]
 version = "0.47.0"
 default-features = false
 features = ["rustls"]
 
+[dev-dependencies.rusoto_s3]
+version = "0.47.0"
+default-features = false
+features = ["rustls"]
+
+[dev-dependencies.smithy-client]
+git = "https://github.com/awslabs/aws-sdk-rust"
+tag = "v0.0.14-alpha"
+features = ["test-util"]
+
 [dev-dependencies.smithy-http]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.13-alpha"
+tag = "v0.0.14-alpha"
