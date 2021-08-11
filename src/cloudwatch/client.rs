@@ -182,34 +182,60 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
-    use rusoto_cloudwatch::{
+    use aws_sdk_cloudwatch::Credentials;
+    use aws_sdk_cloudwatch::model::{
         Datapoint,
         Dimension,
         Metric,
     };
-    use rusoto_mock::{
-        MockCredentialsProvider,
-        MockRequestDispatcher,
-        MockResponseReader,
-        ReadMockResponse,
-    };
+    use pretty_assertions::assert_eq;
+    use smithy_client::erase::DynConnector;
+    use smithy_client::test_connection::TestConnection;
+    use smithy_http::body::SdkBody;
+    use std::fs;
+    use std::path::Path;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
     ) -> Client {
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
+
+        let conf = CloudWatchConfig::builder()
+            .credentials_provider(creds)
+            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .build();
+
         let data = match data_file {
             None    => "".to_string(),
-            Some(d) => MockResponseReader::read_response("test-data", d.into()),
+            Some(d) => {
+                let path = Path::new("test-data").join(d);
+                fs::read_to_string(path).unwrap()
+            },
         };
 
-        let client = CloudWatchClient::new_with(
-            MockRequestDispatcher::default().with_body(&data),
-            MockCredentialsProvider,
-            Default::default()
-        );
+        let events = vec![
+            (
+                http::Request::builder()
+                    .body(SdkBody::from("request body"))
+                    .unwrap(),
+
+                http::Response::builder()
+                    .status(200)
+                    .body(SdkBody::from(data))
+                    .unwrap(),
+            ),
+        ];
+
+        let conn = TestConnection::new(events);
+        let conn = DynConnector::new(conn);
+
+        let client = CloudWatchClient::from_conf_conn(conf, conn);
 
         Client {
             client:      client,
@@ -233,24 +259,26 @@ mod tests {
             storage_types: Some(storage_types),
         };
 
-        let ret = Client::get_metric_statistics(&client, &bucket)
+        let ret = client.get_metric_statistics(&bucket)
             .await
             .unwrap();
 
+        let timestamp = DateTime::parse_from_rfc3339("2020-03-01T20:59:00Z")
+            .unwrap();
+
         let datapoints = vec![
-            Datapoint {
-                average:   Some(123456789.0),
-                timestamp: Some("2020-03-01T20:59:00Z".into()),
-                unit:      Some("Bytes".into()),
-                ..Default::default()
-            },
+            Datapoint::builder()
+                .average(123456789.0)
+                .timestamp(timestamp.into())
+                .unit(StandardUnit::Bytes)
+                .build(),
         ];
 
         let expected = vec![
-            GetMetricStatisticsOutput {
-                datapoints: Some(datapoints),
-                label:      Some("BucketSizeBytes".into()),
-            },
+            GetMetricStatisticsOutput::builder()
+                .set_datapoints(Some(datapoints))
+                .set_label(Some("BucketSizeBytes".into()))
+                .build(),
         ];
 
         assert_eq!(ret, expected);
@@ -258,55 +286,60 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_metrics() {
-        let mut client = mock_client(
+        let client = mock_client(
             Some("cloudwatch-list-metrics.xml"),
         );
 
-        let ret = Client::list_metrics(&mut client).await.unwrap();
+        let ret = client.list_metrics().await.unwrap();
 
         let expected = vec![
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "a-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "a-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardIAStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name: "BucketName".into(),
-                        value: "another-bucket-name".into(),
-                    },
-                    Dimension {
-                        name: "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                ]),
-            },
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("a-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardStorage")
+                        .build(),
+                ]))
+                .build(),
+
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("a-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardIAStorage")
+                        .build(),
+                ]))
+                .build(),
+
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("another-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardStorage")
+                        .build(),
+                ]))
+                .build(),
         ];
 
         assert_eq!(ret, expected);
