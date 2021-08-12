@@ -9,7 +9,6 @@ use log::{
     info,
 };
 use std::str::FromStr;
-use tokio::runtime::Runtime;
 
 /// Command line parsing.
 mod cli;
@@ -96,7 +95,8 @@ impl Client {
 }
 
 /// Entry point
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     // Parse the CLI
@@ -170,5 +170,5 @@ fn main() -> Result<()> {
     // The region here will come from CLI args in the future
     let client = Client::new(config);
 
-    Runtime::new()?.block_on(client.du(unit))
+    client.du(unit).await
 }
