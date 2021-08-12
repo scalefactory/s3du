@@ -100,30 +100,58 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
-    use rusoto_cloudwatch::CloudWatchClient;
-    use rusoto_mock::{
-        MockCredentialsProvider,
-        MockRequestDispatcher,
-        MockResponseReader,
-        ReadMockResponse,
+    use aws_sdk_cloudwatch::Credentials;
+    use aws_sdk_cloudwatch::{
+        client::Client as CloudWatchClient,
+        config::Config as CloudWatchConfig,
     };
+    use pretty_assertions::assert_eq;
+    use smithy_client::erase::DynConnector;
+    use smithy_client::test_connection::TestConnection;
+    use smithy_http::body::SdkBody;
+    use std::fs;
+    use std::path::Path;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
     ) -> Client {
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsecrettoken".to_string()),
+        );
+
+        let conf = CloudWatchConfig::builder()
+            .credentials_provider(creds)
+            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .build();
+
         let data = match data_file {
             None    => "".to_string(),
-            Some(d) => MockResponseReader::read_response("test-data", d.into()),
+            Some(d) => {
+                let path = Path::new("test-data").join(d);
+                fs::read_to_string(path).unwrap()
+            },
         };
 
-        let client = CloudWatchClient::new_with(
-            MockRequestDispatcher::default().with_body(&data),
-            MockCredentialsProvider,
-            Default::default()
-        );
+        let events = vec![
+            (
+                http::Request::builder()
+                    .body(SdkBody::from("request body"))
+                    .unwrap(),
+
+                http::Response::builder()
+                    .status(200)
+                    .body(SdkBody::from(data))
+                    .unwrap(),
+            ),
+        ];
+
+        let conn   = TestConnection::new(events);
+        let conn   = DynConnector::new(conn);
+        let client = CloudWatchClient::from_conf_conn(conf, conn);
 
         Client {
             client:      client,
@@ -138,11 +166,11 @@ mod tests {
             "another-bucket-name",
         ];
 
-        let mut client = mock_client(
+        let client = mock_client(
             Some("cloudwatch-list-metrics.xml"),
         );
 
-        let buckets = Client::buckets(&mut client).await.unwrap();
+        let buckets = client.buckets().await.unwrap();
 
         let mut buckets: Vec<String> = buckets.iter()
             .map(|b| b.name.to_owned())
@@ -169,9 +197,9 @@ mod tests {
             storage_types: Some(storage_types),
         };
 
-        let ret = Client::bucket_size(&client, &bucket).await.unwrap();
+        let ret = client.bucket_size(&bucket).await.unwrap();
 
-        let expected = 123456789;
+        let expected = 123_456_789;
 
         assert_eq!(ret, expected);
     }
