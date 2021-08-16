@@ -13,9 +13,7 @@ use aws_sdk_cloudwatch::model::{
     StandardUnit,
     Statistic,
 };
-use aws_sdk_cloudwatch::output::{
-    GetMetricStatisticsOutput,
-};
+use aws_sdk_cloudwatch::output::GetMetricStatisticsOutput;
 use chrono::prelude::*;
 use chrono::Duration;
 use crate::common::{

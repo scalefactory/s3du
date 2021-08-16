@@ -15,7 +15,6 @@ use crate::common::{
 };
 use log::debug;
 use rayon::prelude::*;
-//use smithy_client::erase::DynConnector;
 
 /// The S3 `Client`.
 pub struct Client {
