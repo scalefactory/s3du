@@ -61,10 +61,14 @@ impl Default for ClientConfig {
         #[cfg(all(feature = "s3", not(feature = "cloudwatch")))]
         let mode = ClientMode::S3;
 
+        let region = tokio::runtime::Runtime::new()
+            .expect("tokio runtime")
+            .block_on(Region::new());
+
         Self {
             bucket_name: None,
             mode:        mode,
-            region:      Region::new(),
+            region:      region,
             #[cfg(feature = "s3")]
             object_versions: ObjectVersions::Current,
         }

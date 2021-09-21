@@ -1,8 +1,8 @@
 // cli: This module is responsible for command line interface parsing
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use aws_types::region::{
-    EnvironmentProvider,
+use aws_config::environment::EnvironmentVariableRegionProvider;
+use aws_config::meta::region::{
     ProvideRegion,
 };
 use clap::{
@@ -50,8 +50,10 @@ lazy_static! {
     ///     are unavailable
     static ref DEFAULT_REGION: String = {
         // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
-        let env    = EnvironmentProvider::new();
-        let region = env.region();
+        let env    = EnvironmentVariableRegionProvider::new();
+        let region = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(env.region());
 
         // If we don't find a region, we'll fall back to our FALLBACK_REGION
         region.map_or_else(

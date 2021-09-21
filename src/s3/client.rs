@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use aws_config::meta::region::ProvideRegion;
 use aws_sdk_s3::{
     client::Client as S3Client,
     config::Config as S3Config,
@@ -33,7 +34,7 @@ pub struct Client {
 
 impl Client {
     /// Return a new S3 `Client` with the given `ClientConfig`.
-    pub fn new(config: ClientConfig) -> Self {
+    pub async fn new(config: ClientConfig) -> Self {
         let bucket_name = config.bucket_name;
         let region      = config.region;
 
@@ -43,7 +44,7 @@ impl Client {
         );
 
         let s3config = S3Config::builder()
-            .region(&region)
+            .region(region.region().await)
             .build();
 
         let s3client = S3Client::from_conf(s3config);
@@ -101,7 +102,7 @@ impl Client {
             None                               => "us-east-1".to_string(),
         };
 
-        let location = Region::new().set_region(&location);
+        let location = Region::new().await.set_region(&location);
 
         debug!("Final location: {:?}", location);
 
@@ -221,7 +222,7 @@ impl Client {
                             },
                         }
                     })
-                    .sum::<i32>() as usize;
+                    .sum::<i64>() as usize;
             }
 
             // Check if we need to continue processing bucket output and store
@@ -260,7 +261,7 @@ impl Client {
                 size += contents
                     .par_iter()
                     .map(|o| o.size)
-                    .sum::<i32>() as usize;
+                    .sum::<i64>() as usize;
             }
 
             // If the output was truncated (Some(true)), we should have a
@@ -326,7 +327,7 @@ impl Client {
                 size += parts
                     .par_iter()
                     .map(|p| p.size)
-                    .sum::<i32>() as usize;
+                    .sum::<i64>() as usize;
             }
 
             if output.is_truncated {
@@ -354,7 +355,7 @@ mod tests {
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
-    fn mock_client(
+    async fn mock_client(
         data_file: Vec<&str>,
         versions:  ObjectVersions,
     ) -> Client {
@@ -401,13 +402,13 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::new().set_region("eu-west-1"),
+            region:          Region::new().await.set_region("eu-west-1"),
         }
     }
 
     // Create a mock client that returns a specific status code and empty
     // response body.
-    fn mock_client_with_status(status: u16) -> Client {
+    async fn mock_client_with_status(status: u16) -> Client {
         let creds = Credentials::from_keys(
             "ATESTCLIENT",
             "atestsecretkey",
@@ -443,7 +444,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: ObjectVersions::Current,
-            region:          Region::new().set_region("eu-west-1"),
+            region:          Region::new().await.set_region("eu-west-1"),
         }
     }
 
@@ -459,7 +460,7 @@ mod tests {
             let status_code: u16 = test.0;
             let expected         = test.1;
 
-            let client = mock_client_with_status(status_code);
+            let client = mock_client_with_status(status_code).await;
             let ret    = client.head_bucket("test-bucket").await;
 
             assert_eq!(ret, expected);
@@ -484,13 +485,13 @@ mod tests {
         let client = mock_client(
             vec!["s3-get-bucket-location.xml"],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let ret = client.get_bucket_location("test-bucket")
             .await
             .unwrap();
 
-        let expected = Region::new().set_region("eu-west-1");
+        let expected = Region::new().await.set_region("eu-west-1");
 
         assert_eq!(ret, expected);
     }
@@ -500,13 +501,13 @@ mod tests {
         let client = mock_client(
             vec!["s3-get-bucket-location-eu.xml"],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let ret = client.get_bucket_location("test-bucket")
             .await
             .unwrap();
 
-        let expected = Region::new().set_region("eu-west-1");
+        let expected = Region::new().await.set_region("eu-west-1");
 
         assert_eq!(ret, expected);
     }
@@ -516,13 +517,13 @@ mod tests {
         let client = mock_client(
             vec!["s3-get-bucket-location-null.xml"],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let ret = client.get_bucket_location("test-bucket")
             .await
             .unwrap();
 
-        let expected = Region::new().set_region("");
+        let expected = Region::new().await.set_region("");
 
         assert_eq!(ret, expected);
     }
@@ -532,7 +533,7 @@ mod tests {
         let client = mock_client(
             vec!["s3-list-buckets.xml"],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let mut ret = client.list_buckets().await.unwrap();
         ret.sort();
@@ -557,7 +558,7 @@ mod tests {
         let client = mock_client(
             data_files,
             ObjectVersions::Current,
-        );
+        ).await;
 
         let size = client.size_multipart_uploads("test-bucket").await.unwrap();
 
@@ -608,7 +609,7 @@ mod tests {
             let client = mock_client(
                 data_files,
                 versions,
-            );
+            ).await;
 
             let ret = client.size_objects("test-bucket")
                 .await
@@ -623,7 +624,7 @@ mod tests {
         let client = mock_client(
             vec!["s3-list-parts.xml"],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let ret = client.size_parts(
             "test-bucket",

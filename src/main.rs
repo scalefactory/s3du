@@ -41,7 +41,7 @@ struct Client(Box<dyn BucketSizer>);
 /// `Client` implementation.
 impl Client {
     /// Return the appropriate AWS client with the given `ClientConfig`.
-    fn new(config: ClientConfig) -> Self {
+    async fn new(config: ClientConfig) -> Self {
         let mode   = &config.mode;
         let region = &config.region;
 
@@ -51,12 +51,12 @@ impl Client {
             #[cfg(feature = "cloudwatch")]
             ClientMode::CloudWatch => {
                 let client = cloudwatch::Client::new(config);
-                Box::new(client)
+                Box::new(client.await)
             },
             #[cfg(feature = "s3")]
             ClientMode::S3 => {
                 let client = s3::Client::new(config);
-                Box::new(client)
+                Box::new(client.await)
             },
         };
 
@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
         if mode == ClientMode::S3 {
             let endpoint = matches.value_of("ENDPOINT").unwrap();
 
-            Region::new().set_endpoint(endpoint)
+            Region::new().await.set_endpoint(endpoint)
         }
         else {
             eprintln!("Error: Endpoint supplied but client mode is not S3");
@@ -131,7 +131,7 @@ async fn main() -> Result<()> {
     }
     else {
         let region = matches.value_of("REGION").unwrap();
-        Region::new().set_region(region)
+        Region::new().await.set_region(region)
     };
 
     // Endpoint selection isn't supported for CloudWatch, so we can drop it if
@@ -139,7 +139,7 @@ async fn main() -> Result<()> {
     #[cfg(all(feature = "cloudwatch", not(feature = "s3")))]
     let region = {
         let region = matches.value_of("REGION").unwrap();
-        Region::new().set_region(region)
+        Region::new().await.set_region(region)
     };
 
     // This warning will trigger if compiled without the "s3" feature. We're
@@ -168,7 +168,7 @@ async fn main() -> Result<()> {
     }
 
     // The region here will come from CLI args in the future
-    let client = Client::new(config);
+    let client = Client::new(config).await;
 
     client.du(unit).await
 }

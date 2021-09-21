@@ -99,8 +99,8 @@ mod tests {
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
-    fn mock_client(
-        responses: Vec<ResponseType>,
+    async fn mock_client<'a>(
+        responses: Vec<ResponseType<'a>>,
         versions:  ObjectVersions,
     ) -> Client {
         let creds = Credentials::from_keys(
@@ -159,7 +159,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::new().set_region("eu-west-1"),
+            region:          Region::new().await.set_region("eu-west-1"),
         }
     }
 
@@ -181,7 +181,7 @@ mod tests {
         let client = mock_client(
             responses,
             ObjectVersions::Current,
-        );
+        ).await;
 
         let buckets = client.buckets().await.unwrap();
 
@@ -199,7 +199,7 @@ mod tests {
         let client = mock_client(
             vec![ResponseType::FromFile("s3-list-objects.xml")],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let bucket = Bucket {
             name:          "test-bucket".into(),

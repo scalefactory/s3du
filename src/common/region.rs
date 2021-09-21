@@ -1,9 +1,8 @@
 // Handles region things
-use aws_types::region::{
-    self,
-    EnvironmentProvider,
-    ProvideRegion,
-};
+use aws_config::environment::EnvironmentVariableRegionProvider;
+use aws_config::meta::region::future;
+use aws_config::meta::region::ProvideRegion;
+use aws_types::region;
 use log::debug;
 
 #[derive(Debug, Default, Eq, PartialEq)]
@@ -13,15 +12,16 @@ pub struct Region {
 }
 
 impl Region {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         // By default, we try to get a region from the environment, this might
         // be overridden later depending on CLI options.
-        let env_region = EnvironmentProvider::new().region();
+        let provider = EnvironmentVariableRegionProvider::new();
+        let region   = provider.region().await;
 
-        debug!("AWS_REGION in environment is: {:?}", env_region);
+        debug!("AWS_REGION in environment is: {:?}", region);
 
         Self {
-            region: env_region,
+            region: region,
             ..Default::default()
         }
     }
@@ -54,9 +54,8 @@ impl ProvideRegion for Region {
     // Takes our region string and returns a proper AWS Region, this should
     // allow us to pass our Region into AWS SDK functions expecting an AWS
     // Region.
-    fn region(&self) -> Option<region::Region> {
-        //self.region.map(|r| region::Region::new(r))
-        self.region.to_owned()
+    fn region(&self) -> future::ProvideRegion {
+        future::ProvideRegion::ready(self.region.to_owned())
     }
 }
 
@@ -64,8 +63,7 @@ impl ProvideRegion for &Region {
     // Takes our region string and returns a proper AWS Region, this should
     // allow us to pass our Region into AWS SDK functions expecting an AWS
     // Region.
-    fn region(&self) -> Option<region::Region> {
-        //self.region.map(|r| region::Region::new(r))
-        self.region.to_owned()
+    fn region(&self) -> future::ProvideRegion {
+        future::ProvideRegion::ready(self.region.to_owned())
     }
 }

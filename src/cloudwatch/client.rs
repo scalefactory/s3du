@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use aws_config::meta::region::ProvideRegion;
 use aws_sdk_cloudwatch::{
     client::Client as CloudWatchClient,
     config::Config as CloudWatchConfig,
@@ -33,14 +34,14 @@ pub struct Client {
 
 impl Client {
     /// Return a new `Client` with the given `ClientConfig`.
-    pub fn new(config: ClientConfig) -> Self {
+    pub async fn new(config: ClientConfig) -> Self {
         let bucket_name = config.bucket_name;
         let region      = config.region;
 
         debug!("new: Creating CloudWatchClient in region '{}'", region.name());
 
         let config = CloudWatchConfig::builder()
-            .region(&region)
+            .region(region.region().await)
             .build();
 
         let client = CloudWatchClient::from_conf(config);
