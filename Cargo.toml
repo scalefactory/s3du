@@ -43,25 +43,25 @@ rayon = "1.5"
 
 [dependencies.aws-config]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 
 [dependencies.aws-hyper]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 
 [dependencies.aws-sdk-cloudwatch]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 optional = true
 
 [dependencies.aws-sdk-s3]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 optional = true
 
 [dependencies.aws-types]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 
 [dependencies.chrono]
 version = "0.4"
@@ -74,7 +74,7 @@ features = ["color", "suggestions"]
 
 [dependencies.smithy-client]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 
 [dependencies.tokio]
 version = "1.0"
@@ -86,17 +86,17 @@ optional = true
 
 [dev-dependencies]
 http = "0.2"
-pretty_assertions = "0.7"
+pretty_assertions = "1.0"
 
 [dev-dependencies.aws-hyper]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 
 [dev-dependencies.smithy-client]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
 features = ["test-util"]
 
 [dev-dependencies.smithy-http]
 git = "https://github.com/awslabs/aws-sdk-rust"
-tag = "v0.0.18-alpha"
+tag = "v0.0.20-alpha"
