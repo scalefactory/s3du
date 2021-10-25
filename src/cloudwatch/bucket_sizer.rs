@@ -105,10 +105,10 @@ mod tests {
         client::Client as CloudWatchClient,
         config::Config as CloudWatchConfig,
     };
+    use aws_smithy_client::erase::DynConnector;
+    use aws_smithy_client::test_connection::TestConnection;
+    use aws_smithy_http::body::SdkBody;
     use pretty_assertions::assert_eq;
-    use smithy_client::erase::DynConnector;
-    use smithy_client::test_connection::TestConnection;
-    use smithy_http::body::SdkBody;
     use std::fs;
     use std::path::Path;
 

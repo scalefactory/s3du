@@ -81,14 +81,14 @@ mod tests {
     use aws_sdk_s3::Credentials;
     use aws_sdk_s3::client::Client as S3Client;
     use aws_sdk_s3::config::Config as S3Config;
+    use aws_smithy_client::erase::DynConnector;
+    use aws_smithy_client::test_connection::TestConnection;
+    use aws_smithy_http::body::SdkBody;
     use crate::common::{
         ObjectVersions,
         Region,
     };
     use pretty_assertions::assert_eq;
-    use smithy_client::erase::DynConnector;
-    use smithy_client::test_connection::TestConnection;
-    use smithy_http::body::SdkBody;
     use std::fs;
     use std::path::Path;
 
