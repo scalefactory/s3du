@@ -2,12 +2,8 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use aws_config::meta::region::ProvideRegion;
-use aws_sdk_s3::{
-    client::Client as S3Client,
-    config::Config as S3Config,
-    model::BucketLocationConstraint,
-};
+use aws_sdk_s3::client::Client as S3Client;
+use aws_sdk_s3::model::BucketLocationConstraint;
 use crate::common::{
     BucketNames,
     ClientConfig,
@@ -43,11 +39,12 @@ impl Client {
             region.name(),
         );
 
-        let s3config = S3Config::builder()
-            .region(region.region().await)
-            .build();
+        let s3config = aws_config::from_env()
+            .region(region.clone())
+            .load()
+            .await;
 
-        let s3client = S3Client::from_conf(s3config);
+        let s3client = S3Client::new(&s3config);
 
         Self {
             client:          s3client,
@@ -102,7 +99,7 @@ impl Client {
             None                               => "us-east-1".to_string(),
         };
 
-        let location = Region::new().await.set_region(&location);
+        let location = Region::new().set_region(&location);
 
         debug!("Final location: {:?}", location);
 

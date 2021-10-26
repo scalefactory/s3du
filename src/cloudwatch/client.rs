@@ -2,11 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use aws_config::meta::region::ProvideRegion;
-use aws_sdk_cloudwatch::{
-    client::Client as CloudWatchClient,
-    config::Config as CloudWatchConfig,
-};
+use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
 use aws_sdk_cloudwatch::model::{
     Dimension,
     DimensionFilter,
@@ -40,11 +36,12 @@ impl Client {
 
         debug!("new: Creating CloudWatchClient in region '{}'", region.name());
 
-        let config = CloudWatchConfig::builder()
-            .region(region.region().await)
-            .build();
+        let config = aws_config::from_env()
+            .region(region.clone())
+            .load()
+            .await;
 
-        let client = CloudWatchClient::from_conf(config);
+        let client = CloudWatchClient::new(&config);
 
         Self {
             client:      client,

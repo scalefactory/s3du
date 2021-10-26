@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
         if mode == ClientMode::S3 {
             let endpoint = matches.value_of("ENDPOINT").unwrap();
 
-            Region::new().await.set_endpoint(endpoint)
+            Region::new().set_endpoint(endpoint)
         }
         else {
             eprintln!("Error: Endpoint supplied but client mode is not S3");
@@ -131,7 +131,7 @@ async fn main() -> Result<()> {
     }
     else {
         let region = matches.value_of("REGION").unwrap();
-        Region::new().await.set_region(region)
+        Region::new().set_region(region)
     };
 
     // Endpoint selection isn't supported for CloudWatch, so we can drop it if
@@ -139,7 +139,7 @@ async fn main() -> Result<()> {
     #[cfg(all(feature = "cloudwatch", not(feature = "s3")))]
     let region = {
         let region = matches.value_of("REGION").unwrap();
-        Region::new().await.set_region(region)
+        Region::new().set_region(region)
     };
 
     // This warning will trigger if compiled without the "s3" feature. We're

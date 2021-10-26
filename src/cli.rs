@@ -1,10 +1,6 @@
 // cli: This module is responsible for command line interface parsing
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use aws_config::environment::EnvironmentVariableRegionProvider;
-use aws_config::meta::region::{
-    ProvideRegion,
-};
 use clap::{
     crate_authors,
     crate_description,
@@ -16,6 +12,7 @@ use clap::{
 };
 use lazy_static::lazy_static;
 use log::debug;
+use std::env;
 
 #[cfg(feature = "s3")]
 use url::Url;
@@ -50,16 +47,21 @@ lazy_static! {
     ///     are unavailable
     static ref DEFAULT_REGION: String = {
         // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
-        let env    = EnvironmentVariableRegionProvider::new();
-        let region = tokio::runtime::Runtime::new()
-            .unwrap()
-            .block_on(env.region());
-
         // If we don't find a region, we'll fall back to our FALLBACK_REGION
-        region.map_or_else(
-            || FALLBACK_REGION.to_string(),
-            |r| r.as_ref().to_string(),
-        )
+        let possibilities = vec![
+            env::var("AWS_REGION"),
+            env::var("AWS_DEFAULT_REGION"),
+        ];
+
+        let region = possibilities
+            .iter()
+            .find_map(|region| region.as_ref().ok())
+            .map_or_else(
+                || FALLBACK_REGION,
+                |r| r,
+            );
+
+        region.to_string()
     };
 }
 

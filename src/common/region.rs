@@ -1,22 +1,29 @@
 // Handles region things
-use aws_config::environment::EnvironmentVariableRegionProvider;
 use aws_config::meta::region::future;
 use aws_config::meta::region::ProvideRegion;
 use aws_types::region;
 use log::debug;
+use std::env;
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Region {
     endpoint: Option<String>,
     region:   Option<region::Region>,
 }
 
 impl Region {
-    pub async fn new() -> Self {
+    pub fn new() -> Self {
         // By default, we try to get a region from the environment, this might
         // be overridden later depending on CLI options.
-        let provider = EnvironmentVariableRegionProvider::new();
-        let region   = provider.region().await;
+        let possibilities = vec![
+            env::var("AWS_REGION"),
+            env::var("AWS_DEFAULT_REGION"),
+        ];
+
+        let region = possibilities
+            .iter()
+            .find_map(|region| region.as_ref().ok())
+            .map(|region| region::Region::new(region.to_owned()));
 
         debug!("AWS_REGION in environment is: {:?}", region);
 
