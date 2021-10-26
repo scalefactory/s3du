@@ -343,6 +343,7 @@ impl Client {
 mod tests {
     use super::*;
     use aws_sdk_s3::Credentials;
+    use aws_sdk_s3::config::Config as S3Config;
     use aws_smithy_client::erase::DynConnector;
     use aws_smithy_client::test_connection::TestConnection;
     use aws_smithy_http::body::SdkBody;
@@ -399,7 +400,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::new().await.set_region("eu-west-1"),
+            region:          Region::new().set_region("eu-west-1"),
         }
     }
 
@@ -441,7 +442,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: ObjectVersions::Current,
-            region:          Region::new().await.set_region("eu-west-1"),
+            region:          Region::new().set_region("eu-west-1"),
         }
     }
 
@@ -488,7 +489,7 @@ mod tests {
             .await
             .unwrap();
 
-        let expected = Region::new().await.set_region("eu-west-1");
+        let expected = Region::new().set_region("eu-west-1");
 
         assert_eq!(ret, expected);
     }
@@ -504,7 +505,7 @@ mod tests {
             .await
             .unwrap();
 
-        let expected = Region::new().await.set_region("eu-west-1");
+        let expected = Region::new().set_region("eu-west-1");
 
         assert_eq!(ret, expected);
     }
@@ -520,7 +521,7 @@ mod tests {
             .await
             .unwrap();
 
-        let expected = Region::new().await.set_region("");
+        let expected = Region::new().set_region("");
 
         assert_eq!(ret, expected);
     }

@@ -179,6 +179,7 @@ impl Client {
 mod tests {
     use super::*;
     use aws_sdk_cloudwatch::Credentials;
+    use aws_sdk_cloudwatch::config::Config as CloudWatchConfig;
     use aws_sdk_cloudwatch::model::{
         Datapoint,
         Dimension,

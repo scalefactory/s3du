@@ -159,7 +159,7 @@ mod tests {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::new().await.set_region("eu-west-1"),
+            region:          Region::new().set_region("eu-west-1"),
         }
     }
 
