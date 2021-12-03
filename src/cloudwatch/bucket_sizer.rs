@@ -6,6 +6,7 @@ use anyhow::{
     Result,
 };
 use async_trait::async_trait;
+use aws_smithy_types_convert::date_time::DateTimeExt;
 use crate::common::{
     Bucket,
     Buckets,
@@ -70,8 +71,8 @@ impl BucketSizer for Client {
             // than a single datapoint, so we must sort them.
             // We sort so that the latest datapoint is at index 0 of the vec.
             datapoints.sort_by(|a, b| {
-                let a_timestamp = a.timestamp.unwrap().to_chrono();
-                let b_timestamp = b.timestamp.unwrap().to_chrono();
+                let a_timestamp = a.timestamp.unwrap().to_chrono_utc();
+                let b_timestamp = b.timestamp.unwrap().to_chrono_utc();
 
                 b_timestamp.cmp(&a_timestamp)
             });

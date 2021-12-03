@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
+use aws_sdk_cloudwatch::DateTime;
 use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
 use aws_sdk_cloudwatch::model::{
     Dimension,
@@ -11,7 +12,9 @@ use aws_sdk_cloudwatch::model::{
     Statistic,
 };
 use aws_sdk_cloudwatch::output::GetMetricStatisticsOutput;
-use chrono::prelude::*;
+use aws_smithy_types_convert::date_time::DateTimeExt;
+use chrono::prelude::DateTime as ChronoDt;
+use chrono::prelude::Utc;
 use chrono::Duration;
 use crate::common::{
     Bucket,
@@ -60,10 +63,10 @@ impl Client {
         debug!("get_metric_statistics: Processing {:?}", bucket);
 
         // These are used repeatedly while looping, just prepare them once.
-        let now: DateTime<Utc> = Utc::now();
+        let now: ChronoDt<Utc> = Utc::now();
         let one_day            = Duration::days(1);
         let period             = one_day.num_seconds() as i32;
-        let start_time         = (now - (one_day * 2)).into();
+        let start_time         = DateTime::from_chrono_utc(now - (one_day * 2));
 
         let storage_types = match &bucket.storage_types {
             Some(st) => st.to_owned(),
@@ -85,7 +88,7 @@ impl Client {
             ];
 
             let input = self.client.get_metric_statistics()
-                .end_time(now.into())
+                .end_time(DateTime::from_chrono_utc(now))
                 .metric_name("BucketSizeBytes")
                 .namespace("AWS/S3")
                 .period(period)
@@ -260,13 +263,13 @@ mod tests {
             .await
             .unwrap();
 
-        let timestamp = DateTime::parse_from_rfc3339("2020-03-01T20:59:00Z")
+        let timestamp = ChronoDt::parse_from_rfc3339("2020-03-01T20:59:00Z")
             .unwrap();
 
         let datapoints = vec![
             Datapoint::builder()
                 .average(123456789.0)
-                .timestamp(timestamp.into())
+                .timestamp(DateTime::from_chrono_fixed(timestamp))
                 .unit(StandardUnit::Bytes)
                 .build(),
         ];

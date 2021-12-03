@@ -27,7 +27,7 @@ exclude = [
 default = ["cloudwatch", "s3"]
 
 # Only CloudWatch support
-cloudwatch = ["aws-sdk-cloudwatch", "chrono"]
+cloudwatch = ["aws-sdk-cloudwatch", "aws-smithy-types-convert", "chrono"]
 
 # Only S3 support
 s3 = ["aws-sdk-s3", "url"]
@@ -35,28 +35,32 @@ s3 = ["aws-sdk-s3", "url"]
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
+aws-config = "0.2.0"
+aws-hyper = "0.2.0"
+aws-smithy-client = "0.32.0"
 humansize = "1.1"
 lazy_static = "1.4"
 log = "0.4"
 pretty_env_logger = "0.4"
 rayon = "1.5"
 
-[dependencies.aws-config]
-version = "0.0.22-alpha"
-
-[dependencies.aws-hyper]
-version = "0.0.22-alpha"
-
 [dependencies.aws-sdk-cloudwatch]
-version = "0.0.22-alpha"
+version = "0.2.0"
 optional = true
 
 [dependencies.aws-sdk-s3]
-version = "0.0.22-alpha"
+version = "0.2.0"
 optional = true
 
+[dependencies.aws-smithy-types-convert]
+version = "0.32.0"
+optional = true
+features = ["convert-chrono"]
+
+# Harccoded credentials are only used in tests.
 [dependencies.aws-types]
-version = "0.0.22-alpha"
+version = "0.2.0"
+features = ["hardcoded-credentials"]
 
 [dependencies.chrono]
 version = "0.4"
@@ -67,9 +71,6 @@ version = "2.33"
 default-features = false
 features = ["color", "suggestions"]
 
-[dependencies.aws-smithy-client]
-version = "0.27.0-alpha"
-
 [dependencies.tokio]
 version = "1.0"
 features = ["macros", "rt-multi-thread"]
@@ -79,15 +80,10 @@ version = "2.1"
 optional = true
 
 [dev-dependencies]
+aws-smithy-http = "0.32.0"
 http = "0.2"
 pretty_assertions = "1.0"
 
-[dev-dependencies.aws-hyper]
-version = "0.0.22-alpha"
-
 [dev-dependencies.aws-smithy-client]
-version = "0.27.0-alpha"
+version = "0.32.0"
 features = ["test-util"]
-
-[dev-dependencies.aws-smithy-http]
-version = "0.27.0-alpha"
