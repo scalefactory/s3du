@@ -13,7 +13,7 @@ jobs:
         # Test against current stable and the MSRV
         toolchain-version:
           - 'stable'
-          - '1.46.0'
+          - '1.53.0'
     steps:
       - name: 'Checkout'
         uses: 'actions/checkout@v2'
