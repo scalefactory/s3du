@@ -2,27 +2,29 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use chrono::prelude::*;
+use aws_sdk_cloudwatch::DateTime;
+use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
+use aws_sdk_cloudwatch::model::{
+    Dimension,
+    DimensionFilter,
+    Metric,
+    StandardUnit,
+    Statistic,
+};
+use aws_sdk_cloudwatch::output::GetMetricStatisticsOutput;
+use aws_smithy_types_convert::date_time::DateTimeExt;
+use chrono::prelude::DateTime as ChronoDt;
+use chrono::prelude::Utc;
 use chrono::Duration;
 use crate::common::{
     Bucket,
     ClientConfig,
 };
 use log::debug;
-use rusoto_cloudwatch::{
-    CloudWatch,
-    CloudWatchClient,
-    Dimension,
-    DimensionFilter,
-    GetMetricStatisticsInput,
-    GetMetricStatisticsOutput,
-    ListMetricsInput,
-    Metric,
-};
 
 /// A CloudWatch `Client`
 pub struct Client {
-    /// The Rusoto `CloudWatchClient`.
+    /// The AWS SDK `CloudWatchClient`.
     pub client: CloudWatchClient,
 
     /// Bucket name that was selected, if any.
@@ -31,13 +33,18 @@ pub struct Client {
 
 impl Client {
     /// Return a new `Client` with the given `ClientConfig`.
-    pub fn new(config: ClientConfig) -> Self {
+    pub async fn new(config: ClientConfig) -> Self {
         let bucket_name = config.bucket_name;
         let region      = config.region;
 
         debug!("new: Creating CloudWatchClient in region '{}'", region.name());
 
-        let client = CloudWatchClient::new(region);
+        let config = aws_config::from_env()
+            .region(region.clone())
+            .load()
+            .await;
+
+        let client = CloudWatchClient::new(&config);
 
         Self {
             client:      client,
@@ -55,56 +62,51 @@ impl Client {
     ) -> Result<Vec<GetMetricStatisticsOutput>> {
         debug!("get_metric_statistics: Processing {:?}", bucket);
 
-        let now: DateTime<Utc> = Utc::now();
+        // These are used repeatedly while looping, just prepare them once.
+        let now: ChronoDt<Utc> = Utc::now();
         let one_day            = Duration::days(1);
+        let period             = one_day.num_seconds() as i32;
+        let start_time         = DateTime::from_chrono_utc(now - (one_day * 2));
 
         let storage_types = match &bucket.storage_types {
             Some(st) => st.to_owned(),
             None     => Vec::new(),
         };
 
-        let inputs: Vec<GetMetricStatisticsInput> = storage_types
-            .iter()
-            .map(|storage_type| {
-                let dimensions = vec![
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: bucket.name.to_owned(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: storage_type.to_owned(),
-                    },
-                ];
-
-                GetMetricStatisticsInput {
-                    dimensions:  Some(dimensions),
-                    end_time:    self.iso8601(now),
-                    metric_name: "BucketSizeBytes".into(),
-                    namespace:   "AWS/S3".into(),
-                    period:      one_day.num_seconds(),
-                    start_time:  self.iso8601(now - (one_day * 2)),
-                    statistics:  Some(vec!["Average".into()]),
-                    unit:        Some("Bytes".into()),
-                    ..Default::default()
-                }
-            })
-            .collect();
-
         let mut outputs = Vec::new();
 
-        for input in inputs {
-            let output = self.client.get_metric_statistics(input).await?;
+        for storage_type in storage_types {
+            let dimensions = vec![
+                Dimension::builder()
+                    .name("BucketName")
+                    .value(bucket.name.to_owned())
+                    .build(),
+                Dimension::builder()
+                    .name("StorageType")
+                    .value(storage_type.to_owned())
+                    .build(),
+            ];
+
+            let input = self.client.get_metric_statistics()
+                .end_time(DateTime::from_chrono_utc(now))
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .period(period)
+                .set_dimensions(Some(dimensions))
+                .start_time(start_time)
+                .statistics(Statistic::Average)
+                .unit(StandardUnit::Bytes);
+
+            debug!("{:?}", input);
+
+            let output = input
+                .send()
+                .await?;
+
             outputs.push(output);
         }
 
         Ok(outputs)
-    }
-
-    /// Return an ISO8601 formatted timestamp suitable for
-    /// `GetMetricsStatisticsInput`.
-    pub fn iso8601(&self, dt: DateTime<Utc>) -> String {
-        dt.to_rfc3339_opts(SecondsFormat::Secs, true)
     }
 
     /// Get list of buckets with `BucketSizeBytes` metrics.
@@ -135,10 +137,10 @@ impl Client {
         // If we selected a bucket to list, filter for it here.
         let dimensions = match self.bucket_name.as_ref() {
             Some(bucket_name) => {
-                let filter = DimensionFilter {
-                    name: "BucketName".into(),
-                    value: Some(bucket_name.to_owned()),
-                };
+                let filter = DimensionFilter::builder()
+                    .name("BucketName")
+                    .value(bucket_name.to_owned())
+                    .build();
 
                 Some(vec![filter])
             },
@@ -148,16 +150,13 @@ impl Client {
         // We loop until we've processed everything.
         loop {
             // Input for CloudWatch API
-            let list_metrics_input = ListMetricsInput {
-                dimensions:  dimensions.clone(),
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                next_token:  next_token,
-                ..Default::default()
-            };
-
-            // Call the API
-            let output = self.client.list_metrics(list_metrics_input).await?;
+            let output = self.client.list_metrics()
+                .namespace("AWS/S3")
+                .metric_name("BucketSizeBytes")
+                .set_dimensions(dimensions.clone())
+                .set_next_token(next_token)
+                .send()
+                .await?;
 
             debug!("list_metrics: API returned: {:#?}", output);
 
@@ -182,34 +181,61 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
-    use rusoto_cloudwatch::{
+    use aws_sdk_cloudwatch::Credentials;
+    use aws_sdk_cloudwatch::config::Config as CloudWatchConfig;
+    use aws_sdk_cloudwatch::model::{
         Datapoint,
         Dimension,
         Metric,
     };
-    use rusoto_mock::{
-        MockCredentialsProvider,
-        MockRequestDispatcher,
-        MockResponseReader,
-        ReadMockResponse,
-    };
+    use aws_smithy_client::erase::DynConnector;
+    use aws_smithy_client::test_connection::TestConnection;
+    use aws_smithy_http::body::SdkBody;
+    use pretty_assertions::assert_eq;
+    use std::fs;
+    use std::path::Path;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
     fn mock_client(
         data_file: Option<&str>,
     ) -> Client {
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
+
+        let conf = CloudWatchConfig::builder()
+            .credentials_provider(creds)
+            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .build();
+
         let data = match data_file {
             None    => "".to_string(),
-            Some(d) => MockResponseReader::read_response("test-data", d.into()),
+            Some(d) => {
+                let path = Path::new("test-data").join(d);
+                fs::read_to_string(path).unwrap()
+            },
         };
 
-        let client = CloudWatchClient::new_with(
-            MockRequestDispatcher::default().with_body(&data),
-            MockCredentialsProvider,
-            Default::default()
-        );
+        let events = vec![
+            (
+                http::Request::builder()
+                    .body(SdkBody::from("request body"))
+                    .unwrap(),
+
+                http::Response::builder()
+                    .status(200)
+                    .body(SdkBody::from(data))
+                    .unwrap(),
+            ),
+        ];
+
+        let conn = TestConnection::new(events);
+        let conn = DynConnector::new(conn);
+
+        let client = CloudWatchClient::from_conf_conn(conf, conn);
 
         Client {
             client:      client,
@@ -233,91 +259,87 @@ mod tests {
             storage_types: Some(storage_types),
         };
 
-        let ret = Client::get_metric_statistics(&client, &bucket)
+        let ret = client.get_metric_statistics(&bucket)
             .await
             .unwrap();
 
+        let timestamp = ChronoDt::parse_from_rfc3339("2020-03-01T20:59:00Z")
+            .unwrap();
+
         let datapoints = vec![
-            Datapoint {
-                average:   Some(123456789.0),
-                timestamp: Some("2020-03-01T20:59:00Z".into()),
-                unit:      Some("Bytes".into()),
-                ..Default::default()
-            },
+            Datapoint::builder()
+                .average(123456789.0)
+                .timestamp(DateTime::from_chrono_fixed(timestamp))
+                .unit(StandardUnit::Bytes)
+                .build(),
         ];
 
         let expected = vec![
-            GetMetricStatisticsOutput {
-                datapoints: Some(datapoints),
-                label:      Some("BucketSizeBytes".into()),
-            },
+            GetMetricStatisticsOutput::builder()
+                .set_datapoints(Some(datapoints))
+                .set_label(Some("BucketSizeBytes".into()))
+                .build(),
         ];
-
-        assert_eq!(ret, expected);
-    }
-
-    #[test]
-    fn test_iso8601() {
-        let dt       = Utc.ymd(2020, 3, 1).and_hms(0, 16, 27);
-        let expected = "2020-03-01T00:16:27Z";
-
-        let client = mock_client(None);
-        let ret    = Client::iso8601(&client, dt);
 
         assert_eq!(ret, expected);
     }
 
     #[tokio::test]
     async fn test_list_metrics() {
-        let mut client = mock_client(
+        let client = mock_client(
             Some("cloudwatch-list-metrics.xml"),
         );
 
-        let ret = Client::list_metrics(&mut client).await.unwrap();
+        let ret = client.list_metrics().await.unwrap();
 
         let expected = vec![
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "a-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "a-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardIAStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name: "BucketName".into(),
-                        value: "another-bucket-name".into(),
-                    },
-                    Dimension {
-                        name: "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                ]),
-            },
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("a-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardStorage")
+                        .build(),
+                ]))
+                .build(),
+
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("a-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardIAStorage")
+                        .build(),
+                ]))
+                .build(),
+
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("another-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardStorage")
+                        .build(),
+                ]))
+                .build(),
         ];
 
         assert_eq!(ret, expected);

@@ -1,5 +1,9 @@
 # `s3du`
 
+## v1.2.0
+
+  - Switch from [Rusoto] to the official [AWS SDK Rust]
+
 ## v1.1.0
 
   - Update [Rusoto] to 0.46.0
@@ -51,6 +55,7 @@
 
 <!-- links -->
 [chrono]: https://crates.io/crates/chrono
+[AWS SDK Rust]: https://github.com/awslabs/aws-sdk-rust
 [MinIO]: https://min.io/
 [Rayon]: https://crates.io/crates/rayon
 [Rusoto]: https://www.rusoto.org/

@@ -1,7 +1,7 @@
 // Definition of a bucket
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use rusoto_core::Region;
+use super::Region;
 
 /// Convenience type for a list of storage types
 pub type StorageTypes = Vec<String>;

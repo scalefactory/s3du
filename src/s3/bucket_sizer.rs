@@ -36,13 +36,13 @@ impl BucketSizer for Client {
         for bucket in &bucket_names {
             debug!("Retrieving location for '{}'", bucket);
 
-            let region = self.get_bucket_location(&bucket).await?;
+            let region = self.get_bucket_location(bucket).await?;
 
             // We can only ListBucket for the region our S3 client is in, so
             // we filter for that region here.
             if region == self.region || self.is_custom_client_region() {
                 // If we don't have access to the bucket, skip it.
-                if !self.head_bucket(&bucket).await {
+                if !self.head_bucket(bucket).await {
                     debug!("Access denied for '{}'", bucket);
 
                     continue;
@@ -78,48 +78,89 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::ObjectVersions;
-    use pretty_assertions::assert_eq;
-    use rusoto_core::Region;
-    use rusoto_mock::{
-        MockCredentialsProvider,
-        MockRequestDispatcher,
-        MockResponseReader,
-        MultipleMockRequestDispatcher,
-        ReadMockResponse,
+    use aws_sdk_s3::Credentials;
+    use aws_sdk_s3::client::Client as S3Client;
+    use aws_sdk_s3::config::Config as S3Config;
+    use aws_smithy_client::erase::DynConnector;
+    use aws_smithy_client::test_connection::TestConnection;
+    use aws_smithy_http::body::SdkBody;
+    use crate::common::{
+        ObjectVersions,
+        Region,
     };
-    use rusoto_s3::S3Client;
+    use pretty_assertions::assert_eq;
+    use std::fs;
+    use std::path::Path;
+
+    enum ResponseType<'a> {
+        FromFile(&'a str),
+        WithStatus(u16),
+    }
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
-    fn mock_client(
-        data_file: Option<&str>,
+    async fn mock_client<'a>(
+        responses: Vec<ResponseType<'a>>,
         versions:  ObjectVersions,
     ) -> Client {
-        let data = match data_file {
-            None    => "".to_string(),
-            Some(d) => MockResponseReader::read_response("test-data", d.into()),
-        };
-
-        let client = S3Client::new_with(
-            MockRequestDispatcher::default().with_body(&data),
-            MockCredentialsProvider,
-            Default::default()
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
         );
+
+        let conf = S3Config::builder()
+            .credentials_provider(creds)
+            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .build();
+
+        // Get a vec of events based on the given data_files
+        let events = responses
+            .iter()
+            .map(|r| {
+                match r {
+                    ResponseType::FromFile(file) => {
+                        let path = Path::new("test-data").join(file);
+                        let data = fs::read_to_string(path).unwrap();
+
+                        (
+                            http::Request::builder()
+                                .body(SdkBody::from("request body"))
+                                .unwrap(),
+
+                            http::Response::builder()
+                                .status(200)
+                                .body(SdkBody::from(data))
+                                .unwrap(),
+                        )
+                    },
+                    ResponseType::WithStatus(status) => {
+                        (
+                            http::Request::builder()
+                                .body(SdkBody::from("request body"))
+                                .unwrap(),
+
+                            http::Response::builder()
+                                .status(*status)
+                                .body(SdkBody::from(""))
+                                .unwrap(),
+                        )
+                    },
+                }
+            })
+            .collect();
+
+        let conn = TestConnection::new(events);
+        let conn = DynConnector::new(conn);
+
+        let client = S3Client::from_conf_conn(conf, conn);
 
         Client {
             client:          client,
             bucket_name:     None,
             object_versions: versions,
-            region:          Region::UsEast1,
+            region:          Region::new().set_region("eu-west-1"),
         }
-    }
-
-    // Return a MockRequestDispatcher with a body given by the data_file.
-    fn dispatcher_with_body(data_file: &str) -> MockRequestDispatcher {
-        let data = MockResponseReader::read_response("test-data", data_file);
-
-        MockRequestDispatcher::default().with_body(&data)
     }
 
     #[tokio::test]
@@ -129,30 +170,20 @@ mod tests {
             "another-bucket-name",
         ];
 
-        // This ListBuckets request returns two buckets, so we have to mock two
-        // pairs of GetBucketLocation and HeadBucket responses.
-        let mock = MultipleMockRequestDispatcher::new(vec![
-            dispatcher_with_body("s3-list-buckets.xml"),
-            dispatcher_with_body("s3-get-bucket-location.xml"),
-            MockRequestDispatcher::with_status(200),
-            dispatcher_with_body("s3-get-bucket-location.xml"),
-            MockRequestDispatcher::with_status(200),
-        ]);
+        let responses = vec![
+            ResponseType::FromFile("s3-list-buckets.xml"),
+            ResponseType::FromFile("s3-get-bucket-location.xml"),
+            ResponseType::WithStatus(200),
+            ResponseType::FromFile("s3-get-bucket-location.xml"),
+            ResponseType::WithStatus(200),
+        ];
 
-        let s3client = S3Client::new_with(
-            mock,
-            MockCredentialsProvider,
-            Region::EuWest1,
-        );
+        let client = mock_client(
+            responses,
+            ObjectVersions::Current,
+        ).await;
 
-        let mut client = Client {
-            client:          s3client,
-            bucket_name:     None,
-            object_versions: ObjectVersions::Current,
-            region:          Region::EuWest1,
-        };
-
-        let buckets = Client::buckets(&mut client).await.unwrap();
+        let buckets = client.buckets().await.unwrap();
 
         let mut buckets: Vec<String> = buckets.iter()
             .map(|b| b.name.to_owned())
@@ -166,9 +197,9 @@ mod tests {
     #[tokio::test]
     async fn test_bucket_size() {
         let client = mock_client(
-            Some("s3-list-objects.xml"),
+            vec![ResponseType::FromFile("s3-list-objects.xml")],
             ObjectVersions::Current,
-        );
+        ).await;
 
         let bucket = Bucket {
             name:          "test-bucket".into(),
@@ -176,7 +207,7 @@ mod tests {
             storage_types: None,
         };
 
-        let ret = Client::bucket_size(&client, &bucket).await.unwrap();
+        let ret = client.bucket_size(&bucket).await.unwrap();
 
         let expected = 33792;
 

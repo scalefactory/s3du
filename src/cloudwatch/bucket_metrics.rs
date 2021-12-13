@@ -6,7 +6,7 @@ use crate::common::{
     StorageTypes,
 };
 use log::debug;
-use rusoto_cloudwatch::Metric;
+use aws_sdk_cloudwatch::model::Metric;
 use std::collections::HashMap;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
@@ -59,9 +59,15 @@ impl From<Vec<Metric>> for BucketMetrics {
 
             // Process the dimensions, taking the bucket name and storage types
             for dimension in dimensions {
-                match dimension.name.as_ref() {
-                    "BucketName"  => name         = dimension.value,
-                    "StorageType" => storage_type = dimension.value,
+                // Extract the dimension name
+                let dname = match dimension.name {
+                    Some(n) => n,
+                    None    => continue,
+                };
+
+                match dname.as_ref() {
+                    "BucketName"  => name         = dimension.value.unwrap(),
+                    "StorageType" => storage_type = dimension.value.unwrap(),
                     _             => {},
                 }
             }
@@ -83,57 +89,62 @@ impl From<Vec<Metric>> for BucketMetrics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
-    use rusoto_cloudwatch::{
+    use aws_sdk_cloudwatch::model::{
         Dimension,
         Metric,
     };
+    use pretty_assertions::assert_eq;
 
     // Metrics used in the tests
     fn get_metrics() -> Vec<Metric> {
         vec![
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-bucket-name".into(),
-                    },
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardIAStorage".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-bucket-name".into(),
-                    },
-                ]),
-            },
-            Metric {
-                metric_name: Some("BucketSizeBytes".into()),
-                namespace:   Some("AWS/S3".into()),
-                dimensions:  Some(vec![
-                    Dimension {
-                        name:  "StorageType".into(),
-                        value: "StandardStorage".into(),
-                    },
-                    Dimension {
-                        name:  "BucketName".into(),
-                        value: "some-other-bucket-name".into(),
-                    },
-                ]),
-            },
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("some-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardIAStorage")
+                        .build(),
+                ]))
+                .build(),
+
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("some-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardStorage")
+                        .build(),
+                ]))
+                .build(),
+
+            Metric::builder()
+                .metric_name("BucketSizeBytes")
+                .namespace("AWS/S3")
+                .set_dimensions(Some(vec![
+                    Dimension::builder()
+                        .name("BucketName")
+                        .value("some-other-bucket-name")
+                        .build(),
+
+                    Dimension::builder()
+                        .name("StorageType")
+                        .value("StandardStorage")
+                        .build(),
+                ]))
+                .build(),
         ]
     }
 

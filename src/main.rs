@@ -8,9 +8,7 @@ use log::{
     debug,
     info,
 };
-use rusoto_core::Region;
 use std::str::FromStr;
-use tokio::runtime::Runtime;
 
 /// Command line parsing.
 mod cli;
@@ -22,6 +20,7 @@ use common::{
     ClientConfig,
     ClientMode,
     HumanSize,
+    Region,
     SizeUnit,
 };
 
@@ -42,7 +41,7 @@ struct Client(Box<dyn BucketSizer>);
 /// `Client` implementation.
 impl Client {
     /// Return the appropriate AWS client with the given `ClientConfig`.
-    fn new(config: ClientConfig) -> Self {
+    async fn new(config: ClientConfig) -> Self {
         let mode   = &config.mode;
         let region = &config.region;
 
@@ -52,12 +51,12 @@ impl Client {
             #[cfg(feature = "cloudwatch")]
             ClientMode::CloudWatch => {
                 let client = cloudwatch::Client::new(config);
-                Box::new(client)
+                Box::new(client.await)
             },
             #[cfg(feature = "s3")]
             ClientMode::S3 => {
                 let client = s3::Client::new(config);
-                Box::new(client)
+                Box::new(client.await)
             },
         };
 
@@ -96,17 +95,17 @@ impl Client {
 }
 
 /// Entry point
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     // Parse the CLI
     let matches = cli::parse_args();
 
     // Get the bucket name, if any.
-    let bucket_name = match matches.value_of("BUCKET") {
-        Some(name) => Some(name.to_string()),
-        None       => None,
-    };
+    let bucket_name = matches
+        .value_of("BUCKET")
+        .map(|name| name.to_string());
 
     // Get the client mode
     let mode = value_t!(matches, "MODE", ClientMode)?;
@@ -122,10 +121,8 @@ fn main() -> Result<()> {
     let region = if matches.is_present("ENDPOINT") {
         if mode == ClientMode::S3 {
             let endpoint = matches.value_of("ENDPOINT").unwrap();
-            Region::Custom {
-                name:     "custom".into(),
-                endpoint: endpoint.into(),
-            }
+
+            Region::new().set_endpoint(endpoint)
         }
         else {
             eprintln!("Error: Endpoint supplied but client mode is not S3");
@@ -134,7 +131,7 @@ fn main() -> Result<()> {
     }
     else {
         let region = matches.value_of("REGION").unwrap();
-        Region::from_str(region)?
+        Region::new().set_region(region)
     };
 
     // Endpoint selection isn't supported for CloudWatch, so we can drop it if
@@ -142,7 +139,7 @@ fn main() -> Result<()> {
     #[cfg(all(feature = "cloudwatch", not(feature = "s3")))]
     let region = {
         let region = matches.value_of("REGION").unwrap();
-        Region::from_str(region)?
+        Region::new().set_region(region)
     };
 
     // This warning will trigger if compiled without the "s3" feature. We're
@@ -171,7 +168,7 @@ fn main() -> Result<()> {
     }
 
     // The region here will come from CLI args in the future
-    let client = Client::new(config);
+    let client = Client::new(config).await;
 
-    Runtime::new()?.block_on(client.du(unit))
+    client.du(unit).await
 }

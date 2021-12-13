@@ -1,7 +1,7 @@
 [package]
 name = "s3du"
 description = "Command line utility for showing space used in AWS S3 buckets"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -27,20 +27,40 @@ exclude = [
 default = ["cloudwatch", "s3"]
 
 # Only CloudWatch support
-cloudwatch = ["chrono", "rusoto_cloudwatch"]
+cloudwatch = ["aws-sdk-cloudwatch", "aws-smithy-types-convert", "chrono"]
 
 # Only S3 support
-s3 = ["rusoto_s3", "url"]
+s3 = ["aws-sdk-s3", "url"]
 
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
+aws-config = "0.2.0"
+aws-hyper = "0.2.0"
+aws-smithy-client = "0.32.0"
 humansize = "1.1"
 lazy_static = "1.4"
 log = "0.4"
 pretty_env_logger = "0.4"
 rayon = "1.5"
-tokio = "1.0"
+
+[dependencies.aws-sdk-cloudwatch]
+version = "0.2.0"
+optional = true
+
+[dependencies.aws-sdk-s3]
+version = "0.2.0"
+optional = true
+
+[dependencies.aws-smithy-types-convert]
+version = "0.32.0"
+optional = true
+features = ["convert-chrono"]
+
+# Harccoded credentials are only used in tests.
+[dependencies.aws-types]
+version = "0.2.0"
+features = ["hardcoded-credentials"]
 
 [dependencies.chrono]
 version = "0.4"
@@ -51,31 +71,19 @@ version = "2.33"
 default-features = false
 features = ["color", "suggestions"]
 
-[dependencies.rusoto_cloudwatch]
-version = "0.46.0"
-default-features = false
-features = ["rustls"]
-optional = true
-
-[dependencies.rusoto_core]
-version = "0.46.0"
-default-features = false
-features = ["rustls"]
-
-[dependencies.rusoto_s3]
-version = "0.46.0"
-default-features = false
-features = ["rustls"]
-optional = true
+[dependencies.tokio]
+version = "1.0"
+features = ["macros", "rt-multi-thread"]
 
 [dependencies.url]
 version = "2.1"
 optional = true
 
 [dev-dependencies]
-pretty_assertions = "0.7"
+aws-smithy-http = "0.32.0"
+http = "0.2"
+pretty_assertions = "1.0"
 
-[dev-dependencies.rusoto_mock]
-version = "0.46.0"
-default-features = false
-features = ["rustls"]
+[dev-dependencies.aws-smithy-client]
+version = "0.32.0"
+features = ["test-util"]
