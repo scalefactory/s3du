@@ -59,10 +59,8 @@ version = "0.33.1"
 optional = true
 features = ["convert-chrono"]
 
-# Harccoded credentials are only used in tests.
 [dependencies.aws-types]
 version = "0.3.0"
-features = ["hardcoded-credentials"]
 
 [dependencies.chrono]
 version = "0.4"
@@ -92,3 +90,8 @@ features = ["test-util"]
 [dev-dependencies.aws-smithy-http]
 version = "0.33.1"
 features = ["rt-tokio"]
+
+# Hardcoded credentials are only used in tests.
+[dev-dependencies.aws-types]
+version = "0.3.0"
+features = ["hardcoded-credentials"]
