@@ -3,6 +3,8 @@
 ## v1.2.0
 
   - Switch from [Rusoto] to the official [AWS SDK Rust]
+  - Update [clap] to 0.3.x
+  - Bump MSRV to 1.54.0
 
 ## v1.1.0
 
@@ -55,6 +57,7 @@
 
 <!-- links -->
 [chrono]: https://crates.io/crates/chrono
+[clap]: https://crates.io/crates/clap
 [AWS SDK Rust]: https://github.com/awslabs/aws-sdk-rust
 [MinIO]: https://min.io/
 [Rayon]: https://crates.io/crates/rayon
