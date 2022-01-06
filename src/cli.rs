@@ -101,7 +101,7 @@ const OBJECT_VERSIONS: &[&str] = &[
 /// This validation is taken from
 /// https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html.
 /// We validate based on the legacy standard for compatibility.
-fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
+fn is_valid_aws_s3_bucket_name(s: &str) -> Result<(), String> {
     // Bucket name cannot be empty
     if s.is_empty() {
         return Err("Bucket name cannot be empty".into());
@@ -125,14 +125,14 @@ fn is_valid_aws_s3_bucket_name(s: String) -> Result<(), String> {
 ///   - Is not an AWS endpoint
 ///   - Parses as a valid URL
 #[cfg(feature = "s3")]
-fn is_valid_endpoint(s: String) -> Result<(), String> {
+fn is_valid_endpoint(s: &str) -> Result<(), String> {
     // Endpoint cannot be an empty string
     if s.is_empty() {
         return Err("Endpoint cannot be empty".into());
     }
 
     // Endpoint must parse as a valid URL
-    let url = match Url::parse(&s) {
+    let url = match Url::parse(s) {
         Ok(u)  => Ok(u),
         Err(e) => Err(format!("Could not parse endpoint: {}", e)),
     }?;
@@ -156,7 +156,7 @@ fn is_valid_endpoint(s: String) -> Result<(), String> {
 }
 
 /// Create the command line parser
-fn create_app<'a, 'b>() -> App<'a, 'b> {
+fn create_app<'a>() -> App<'a> {
     debug!("Creating CLI app");
 
     let app = App::new(crate_name!())
@@ -164,7 +164,7 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
         .author(crate_authors!())
         .about(crate_description!())
         .arg(
-            Arg::with_name("BUCKET")
+            Arg::new("BUCKET")
                 .env("S3DU_BUCKET")
                 .hide_env_values(true)
                 .index(1)
@@ -174,11 +174,11 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .validator(is_valid_aws_s3_bucket_name)
         )
         .arg(
-            Arg::with_name("MODE")
+            Arg::new("MODE")
                 .env("S3DU_MODE")
                 .hide_env_values(true)
                 .long("mode")
-                .short("m")
+                .short('m')
                 .value_name("MODE")
                 .help("Use either CloudWatch or S3 to obtain bucket sizes")
                 .takes_value(true)
@@ -186,22 +186,22 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
                 .possible_values(VALID_MODES)
         )
         .arg(
-            Arg::with_name("REGION")
+            Arg::new("REGION")
                 .env("AWS_REGION")
                 .hide_env_values(true)
                 .long("region")
-                .short("r")
+                .short('r')
                 .value_name("REGION")
                 .help("Set the AWS region to create the client in.")
                 .takes_value(true)
                 .default_value(&DEFAULT_REGION)
         )
         .arg(
-            Arg::with_name("UNIT")
+            Arg::new("UNIT")
                 .env("S3DU_UNIT")
                 .hide_env_values(true)
                 .long("unit")
-                .short("u")
+                .short('u')
                 .value_name("UNIT")
                 .help("Sets the unit to use for size display")
                 .takes_value(true)
@@ -212,22 +212,22 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
     #[cfg(feature = "s3")]
     let app = app
         .arg(
-            Arg::with_name("ENDPOINT")
+            Arg::new("ENDPOINT")
                 .env("S3DU_ENDPOINT")
                 .hide_env_values(true)
                 .long("endpoint")
-                .short("e")
+                .short('e')
                 .value_name("URL")
                 .help("Sets a custom endpoint to connect to")
                 .takes_value(true)
                 .validator(is_valid_endpoint)
         )
         .arg(
-            Arg::with_name("OBJECT_VERSIONS")
+            Arg::new("OBJECT_VERSIONS")
                 .env("S3DU_OBJECT_VERSIONS")
                 .hide_env_values(true)
                 .long("object-versions")
-                .short("o")
+                .short('o')
                 .value_name("VERSIONS")
                 .help("Set which object versions to sum in S3 mode")
                 .takes_value(true)
@@ -239,7 +239,7 @@ fn create_app<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Parse the command line arguments
-pub fn parse_args<'a>() -> ArgMatches<'a> {
+pub fn parse_args() -> ArgMatches {
     debug!("Parsing command line arguments");
 
     create_app().get_matches()

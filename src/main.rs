@@ -3,7 +3,6 @@
 #![deny(missing_docs)]
 #![allow(clippy::redundant_field_names)]
 use anyhow::Result;
-use clap::value_t;
 use log::{
     debug,
     info,
@@ -108,10 +107,10 @@ async fn main() -> Result<()> {
         .map(|name| name.to_string());
 
     // Get the client mode
-    let mode = value_t!(matches, "MODE", ClientMode)?;
+    let mode: ClientMode = matches.value_of_t("MODE")?;
 
     // Get the unit size to display
-    let unit = value_t!(matches, "UNIT", SizeUnit)?;
+    let unit: SizeUnit = matches.value_of_t("UNIT")?;
 
     // Here we get the region, if a custom endpoint is set, that is used,
     // otherwise we get the regular region.
