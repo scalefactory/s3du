@@ -2,12 +2,14 @@
 name = "s3du"
 description = "Command line utility for showing space used in AWS S3 buckets"
 version = "1.2.0"
-authors = ["David O'Rourke <david.orourke@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 homepage = "https://github.com/phyber/s3du"
 repository = "https://github.com/phyber/s3du"
+authors = [
+    "David O'Rourke <david.orourke@gmail.com>",
+]
 categories = [
     "command-line-utilities",
     "filesystem",
@@ -24,13 +26,23 @@ exclude = [
 
 [features]
 # Build with both CloudWatch and S3 support by default
-default = ["cloudwatch", "s3"]
+default = [
+    "cloudwatch",
+    "s3",
+]
 
 # Only CloudWatch support
-cloudwatch = ["aws-sdk-cloudwatch", "aws-smithy-types-convert", "chrono"]
+cloudwatch = [
+    "aws-sdk-cloudwatch",
+    "aws-smithy-types-convert",
+    "chrono",
+]
 
 # Only S3 support
-s3 = ["aws-sdk-s3", "url"]
+s3 = [
+    "aws-sdk-s3",
+    "url",
+]
 
 [dependencies]
 anyhow = "1.0"
@@ -52,12 +64,18 @@ optional = true
 
 [dependencies.aws-smithy-client]
 version = "0.33.1"
-features = ["client-hyper", "rustls", "rt-tokio"]
+features = [
+    "client-hyper",
+    "rustls",
+    "rt-tokio",
+]
 
 [dependencies.aws-smithy-types-convert]
 version = "0.33.1"
 optional = true
-features = ["convert-chrono"]
+features = [
+    "convert-chrono",
+]
 
 [dependencies.aws-types]
 version = "0.3.0"
@@ -69,11 +87,20 @@ optional = true
 [dependencies.clap]
 version = "3.0"
 default-features = false
-features = ["cargo", "color", "env", "std", "suggestions"]
+features = [
+    "cargo",
+    "color",
+    "env",
+    "std",
+    "suggestions",
+]
 
 [dependencies.tokio]
 version = "1.0"
-features = ["macros", "rt-multi-thread"]
+features = [
+    "macros",
+    "rt-multi-thread",
+]
 
 [dependencies.url]
 version = "2.1"
@@ -85,13 +112,19 @@ pretty_assertions = "1.0"
 
 [dev-dependencies.aws-smithy-client]
 version = "0.33.1"
-features = ["test-util"]
+features = [
+    "test-util",
+]
 
 [dev-dependencies.aws-smithy-http]
 version = "0.33.1"
-features = ["rt-tokio"]
+features = [
+    "rt-tokio",
+]
 
 # Hardcoded credentials are only used in tests.
 [dev-dependencies.aws-types]
 version = "0.3.0"
-features = ["hardcoded-credentials"]
+features = [
+    "hardcoded-credentials",
+]
