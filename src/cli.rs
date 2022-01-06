@@ -2,7 +2,6 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use clap::{
-    crate_authors,
     crate_description,
     crate_name,
     crate_version,
@@ -161,7 +160,6 @@ fn create_app<'a>() -> App<'a> {
 
     let app = App::new(crate_name!())
         .version(crate_version!())
-        .author(crate_authors!())
         .about(crate_description!())
         .arg(
             Arg::new("BUCKET")
