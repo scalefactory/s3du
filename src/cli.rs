@@ -5,9 +5,9 @@ use clap::{
     crate_description,
     crate_name,
     crate_version,
-    App,
     Arg,
     ArgMatches,
+    Command,
 };
 use lazy_static::lazy_static;
 use log::debug;
@@ -155,10 +155,10 @@ fn is_valid_endpoint(s: &str) -> Result<(), String> {
 }
 
 /// Create the command line parser
-fn create_app<'a>() -> App<'a> {
+fn create_app<'a>() -> Command<'a> {
     debug!("Creating CLI app");
 
-    let app = App::new(crate_name!())
+    let app = Command::new(crate_name!())
         .version(crate_version!())
         .about(crate_description!())
         .arg(
