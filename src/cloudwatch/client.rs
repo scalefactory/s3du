@@ -2,7 +2,6 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use anyhow::Result;
-use aws_sdk_cloudwatch::DateTime;
 use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
 use aws_sdk_cloudwatch::model::{
     Dimension,
@@ -12,6 +11,7 @@ use aws_sdk_cloudwatch::model::{
     Statistic,
 };
 use aws_sdk_cloudwatch::output::GetMetricStatisticsOutput;
+use aws_sdk_cloudwatch::types::DateTime;
 use aws_smithy_types_convert::date_time::DateTimeExt;
 use chrono::prelude::DateTime as ChronoDt;
 use chrono::prelude::Utc;
