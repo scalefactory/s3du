@@ -2,11 +2,13 @@
 name = "s3du"
 description = "Command line utility for showing space used in AWS S3 buckets"
 version = "1.2.0"
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 homepage = "https://github.com/phyber/s3du"
 repository = "https://github.com/phyber/s3du"
+rust-version = "1.58.1"
+resolver = "2"
 authors = [
     "David O'Rourke <david.orourke@gmail.com>",
 ]
