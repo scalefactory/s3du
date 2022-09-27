@@ -18,7 +18,7 @@ summed.
 
 ## Minimum Supported Rust Version
 
-The MSRV for this project is currently 1.61.0.
+The MSRV for this project is currently 1.62.1.
 
 ## Usage
 
