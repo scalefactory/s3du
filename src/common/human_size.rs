@@ -1,7 +1,7 @@
 // HumanSize trait and implementations
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use humansize::FileSize;
+use humansize::format_size;
 use log::debug;
 use super::SizeUnit;
 
@@ -19,9 +19,9 @@ impl HumanSize for usize {
         // Unwrap should be fine here, usize cannot be negative, so file_size
         // shouldn't error.
         match unit {
-            SizeUnit::Binary(unit)  => self.file_size(unit).unwrap(),
+            SizeUnit::Binary(unit)  => format_size(*self, unit),
             SizeUnit::Bytes         => self.to_string(),
-            SizeUnit::Decimal(unit) => self.file_size(unit).unwrap(),
+            SizeUnit::Decimal(unit) => format_size(*self, unit),
         }
     }
 }
@@ -38,7 +38,7 @@ mod tests {
             (0,    "binary",  "0B"),
             (1024, "binary",  "1KiB"),
             (1,    "bytes",   "1"),
-            (1024, "decimal", "1.02KB"),
+            (1024, "decimal", "1.02kB"),
         ];
 
         for test in tests {
