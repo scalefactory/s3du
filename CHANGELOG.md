@@ -3,8 +3,9 @@
 ## v1.2.0
 
   - Switch from [Rusoto] to the official [AWS SDK Rust]
-  - Update [clap] to 3.2.x
-  - Bump MSRV to 1.58.1
+  - Update [clap] to 4.0.x
+  - Bump MSRV to 1.62.1
+  - Switch from [lazy_static] to [once_cell]
 
 ## v1.1.0
 
@@ -58,6 +59,8 @@
 <!-- links -->
 [chrono]: https://crates.io/crates/chrono
 [clap]: https://crates.io/crates/clap
+[lazy_static]: https://crates.io/crates/lazy_static
+[once_cell]: https://crates.io/crates/once_cell
 [AWS SDK Rust]: https://github.com/awslabs/aws-sdk-rust
 [MinIO]: https://min.io/
 [Rayon]: https://crates.io/crates/rayon
