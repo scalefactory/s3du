@@ -11,8 +11,8 @@ use clap::{
     Command,
 };
 use clap::builder::PossibleValuesParser;
-use lazy_static::lazy_static;
 use log::debug;
+use once_cell::sync::Lazy;
 use std::env;
 
 #[cfg(feature = "s3")]
@@ -38,33 +38,31 @@ const DEFAULT_MODE: &str = "s3";
 #[cfg(feature = "s3")]
 const DEFAULT_OBJECT_VERSIONS: &str = "current";
 
-lazy_static! {
-    /// Default AWS region if one isn't provided on the command line.
-    ///
-    /// Obtains the default region in the following order:
-    ///   - `AWS_DEFAULT_REGION` environment variable
-    ///   - `AWS_REGION` environment variable
-    ///   - Falls back to `us-east-1` if regions in the environment variables
-    ///     are unavailable
-    static ref DEFAULT_REGION: String = {
-        // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
-        // If we don't find a region, we'll fall back to our FALLBACK_REGION
-        let possibilities = vec![
-            env::var("AWS_REGION"),
-            env::var("AWS_DEFAULT_REGION"),
-        ];
+/// Default AWS region if one isn't provided on the command line.
+///
+/// Obtains the default region in the following order:
+///   - `AWS_DEFAULT_REGION` environment variable
+///   - `AWS_REGION` environment variable
+///   - Falls back to `us-east-1` if regions in the environment variables
+///     are unavailable
+static DEFAULT_REGION: Lazy<String> = Lazy::new(|| {
+    // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
+    // If we don't find a region, we'll fall back to our FALLBACK_REGION
+    let possibilities = vec![
+        env::var("AWS_REGION"),
+        env::var("AWS_DEFAULT_REGION"),
+    ];
 
-        let region = possibilities
-            .iter()
-            .find_map(|region| region.as_ref().ok())
-            .map_or_else(
-                || FALLBACK_REGION,
-                |r| r,
-            );
+    let region = possibilities
+        .iter()
+        .find_map(|region| region.as_ref().ok())
+        .map_or_else(
+            || FALLBACK_REGION,
+            |r| r,
+        );
 
-        region.to_string()
-    };
-}
+    region.to_string()
+});
 
 /// Default unit to display sizes in.
 const DEFAULT_UNIT: &str = "binary";
