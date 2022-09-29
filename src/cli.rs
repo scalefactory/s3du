@@ -157,12 +157,14 @@ fn is_valid_endpoint(s: &str) -> Result<String, String> {
 }
 
 /// Create the command line parser
-fn create_app<'a>() -> Command<'a> {
+fn create_app() -> Command {
     debug!("Creating CLI app");
 
+    // Below is a little odd looking, as we try to specify an argument order
+    // but also have some options behind features.
     let app = Command::new(crate_name!())
-        .version(crate_version!())
         .about(crate_description!())
+        .version(crate_version!())
         .arg(
             Arg::new("BUCKET")
                 .action(ArgAction::Set)
@@ -172,8 +174,23 @@ fn create_app<'a>() -> Command<'a> {
                 .index(1)
                 .value_name("BUCKET")
                 .value_parser(is_valid_aws_s3_bucket_name)
-        )
+        );
+
+    #[cfg(feature = "s3")]
+    let app = app
         .arg(
+            Arg::new("ENDPOINT")
+                .action(ArgAction::Set)
+                .env("S3DU_ENDPOINT")
+                .help("Sets a custom endpoint to connect to")
+                .hide_env_values(true)
+                .long("endpoint")
+                .short('e')
+                .value_name("URL")
+                .value_parser(is_valid_endpoint)
+        );
+
+    let app = app.arg(
             Arg::new("MODE")
                 .action(ArgAction::Set)
                 .default_value(DEFAULT_MODE)
@@ -184,11 +201,27 @@ fn create_app<'a>() -> Command<'a> {
                 .short('m')
                 .value_name("MODE")
                 .value_parser(PossibleValuesParser::new(VALID_MODES))
-        )
+        );
+
+    #[cfg(feature = "s3")]
+    let app = app
         .arg(
+            Arg::new("OBJECT_VERSIONS")
+                .action(ArgAction::Set)
+                .default_value(DEFAULT_OBJECT_VERSIONS)
+                .env("S3DU_OBJECT_VERSIONS")
+                .help("Set which object versions to sum in S3 mode")
+                .hide_env_values(true)
+                .long("object-versions")
+                .short('o')
+                .value_name("VERSIONS")
+                .value_parser(PossibleValuesParser::new(OBJECT_VERSIONS))
+        );
+
+    app.arg(
             Arg::new("REGION")
                 .action(ArgAction::Set)
-                .default_value(&DEFAULT_REGION)
+                .default_value(&**DEFAULT_REGION)
                 .env("AWS_REGION")
                 .help("Set the AWS region to create the client in.")
                 .hide_env_values(true)
@@ -207,35 +240,7 @@ fn create_app<'a>() -> Command<'a> {
                 .short('u')
                 .value_name("UNIT")
                 .value_parser(PossibleValuesParser::new(VALID_SIZE_UNITS))
-        );
-
-    #[cfg(feature = "s3")]
-    let app = app
-        .arg(
-            Arg::new("ENDPOINT")
-                .action(ArgAction::Set)
-                .env("S3DU_ENDPOINT")
-                .help("Sets a custom endpoint to connect to")
-                .hide_env_values(true)
-                .long("endpoint")
-                .short('e')
-                .value_name("URL")
-                .value_parser(is_valid_endpoint)
         )
-        .arg(
-            Arg::new("OBJECT_VERSIONS")
-                .action(ArgAction::Set)
-                .default_value(DEFAULT_OBJECT_VERSIONS)
-                .env("S3DU_OBJECT_VERSIONS")
-                .help("Set which object versions to sum in S3 mode")
-                .hide_env_values(true)
-                .long("object-versions")
-                .short('o')
-                .value_name("VERSIONS")
-                .value_parser(PossibleValuesParser::new(OBJECT_VERSIONS))
-        );
-
-    app
 }
 
 /// Parse the command line arguments

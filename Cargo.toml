@@ -87,15 +87,19 @@ version = "0.4"
 optional = true
 
 [dependencies.clap]
-version = "3.2.0"
+version = "4.0.2"
 default-features = false
 features = [
     "cargo",
     "color",
     "deprecated",
     "env",
+    "error-context",
+    "help",
     "std",
     "suggestions",
+    "usage",
+    "wrap_help",
 ]
 
 [dependencies.tokio]
