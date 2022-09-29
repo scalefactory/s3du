@@ -103,23 +103,35 @@ async fn main() -> Result<()> {
 
     // Get the bucket name, if any.
     let bucket_name = matches
-        .value_of("BUCKET")
-        .map(|name| name.to_string());
+        .get_one::<String>("BUCKET")
+        .map(|name| name.clone());
 
     // Get the client mode
-    let mode: ClientMode = matches.value_of_t("MODE")?;
+    let mode: ClientMode = {
+        let mode = matches.get_one::<String>("MODE")
+            .expect("client mode");
+
+        ClientMode::from_str(mode.as_str())
+            .expect("client mode")
+    };
 
     // Get the unit size to display
-    let unit: SizeUnit = matches.value_of_t("UNIT")?;
+    let unit: SizeUnit = {
+        let unit = matches.get_one::<String>("UNIT")
+            .expect("size unit");
+
+        SizeUnit::from_str(unit.as_str())
+            .expect("size unit")
+    };
 
     // Here we get the region, if a custom endpoint is set, that is used,
     // otherwise we get the regular region.
     // Unwraps on values here should be fine, as they're checked when the CLI
     // is validated.
     #[cfg(feature = "s3")]
-    let region = if matches.is_present("ENDPOINT") {
+    let region = if matches.contains_id("ENDPOINT") {
         if mode == ClientMode::S3 {
-            let endpoint = matches.value_of("ENDPOINT").unwrap();
+            let endpoint = matches.get_one::<String>("ENDPOINT").unwrap();
 
             Region::new().set_endpoint(endpoint)
         }
@@ -129,7 +141,7 @@ async fn main() -> Result<()> {
         }
     }
     else {
-        let region = matches.value_of("REGION").unwrap();
+        let region = matches.get_one::<String>("REGION").unwrap();
         Region::new().set_region(region)
     };
 
@@ -137,7 +149,7 @@ async fn main() -> Result<()> {
     // we're compiled without the S3 feature.
     #[cfg(all(feature = "cloudwatch", not(feature = "s3")))]
     let region = {
-        let region = matches.value_of("REGION").unwrap();
+        let region = matches.get_one::<String>("REGION").unwrap();
         Region::new().set_region(region)
     };
 
@@ -157,7 +169,7 @@ async fn main() -> Result<()> {
     {
         if config.mode == ClientMode::S3 {
             // This should be safe, we validated this in the CLI parser.
-            let versions = matches.value_of("OBJECT_VERSIONS").unwrap();
+            let versions = matches.get_one::<String>("OBJECT_VERSIONS").unwrap();
 
             // This should be safe, due to validation of the above.
             let versions = ObjectVersions::from_str(versions).unwrap();

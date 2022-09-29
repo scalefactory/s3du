@@ -92,6 +92,7 @@ default-features = false
 features = [
     "cargo",
     "color",
+    "deprecated",
     "env",
     "std",
     "suggestions",
