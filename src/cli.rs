@@ -58,7 +58,7 @@ static DEFAULT_REGION: Lazy<String> = Lazy::new(|| {
         .find_map(|region| region.as_ref().ok())
         .map_or_else(
             || FALLBACK_REGION,
-            |r| r,
+            |region| region,
         );
 
     region.to_string()

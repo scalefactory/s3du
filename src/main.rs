@@ -102,9 +102,7 @@ async fn main() -> Result<()> {
     let matches = cli::parse_args();
 
     // Get the bucket name, if any.
-    let bucket_name = matches
-        .get_one::<String>("BUCKET")
-        .map(|name| name.clone());
+    let bucket_name = matches.get_one::<String>("BUCKET").cloned();
 
     // Get the client mode
     let mode: ClientMode = {
@@ -132,8 +130,11 @@ async fn main() -> Result<()> {
     let region = if matches.contains_id("ENDPOINT") {
         if mode == ClientMode::S3 {
             let endpoint = matches.get_one::<String>("ENDPOINT").unwrap();
+            let region = matches.get_one::<String>("REGION").unwrap();
 
-            Region::new().set_endpoint(endpoint)
+            Region::new()
+                .set_endpoint(endpoint)
+                .set_region(region)
         }
         else {
             eprintln!("Error: Endpoint supplied but client mode is not S3");
@@ -152,6 +153,8 @@ async fn main() -> Result<()> {
         let region = matches.get_one::<String>("REGION").unwrap();
         Region::new().set_region(region)
     };
+
+    println!("{:?}", region);
 
     // This warning will trigger if compiled without the "s3" feature. We're
     // aware, allow it.
@@ -175,6 +178,9 @@ async fn main() -> Result<()> {
             let versions = ObjectVersions::from_str(versions).unwrap();
 
             config.object_versions = versions;
+
+            // Set the endpoint
+            config.endpoint = matches.get_one::<String>("ENDPOINT").cloned();
         }
     }
 

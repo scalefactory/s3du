@@ -4,6 +4,7 @@
 use anyhow::Result;
 use aws_sdk_s3::client::Client as S3Client;
 use aws_sdk_s3::model::BucketLocationConstraint;
+use aws_smithy_http::endpoint::Endpoint;
 use crate::common::{
     BucketNames,
     ClientConfig,
@@ -31,8 +32,7 @@ pub struct Client {
 impl Client {
     /// Return a new S3 `Client` with the given `ClientConfig`.
     pub async fn new(config: ClientConfig) -> Self {
-        let bucket_name = config.bucket_name;
-        let region      = config.region;
+        let region = config.region;
 
         debug!(
             "new: Creating S3Client in region '{}'",
@@ -40,7 +40,17 @@ impl Client {
         );
 
         let s3config = aws_config::from_env()
-            .region(region.clone())
+            .region(region.clone());
+
+        let s3config = if let Some(endpoint) = config.endpoint {
+            let endpoint = Endpoint::immutable(endpoint.parse().unwrap());
+            s3config.endpoint_resolver(endpoint)
+        }
+        else {
+            s3config
+        };
+
+        let s3config = s3config
             .load()
             .await;
 
@@ -48,7 +58,7 @@ impl Client {
 
         Self {
             client:          s3client,
-            bucket_name:     bucket_name,
+            bucket_name:     config.bucket_name,
             object_versions: config.object_versions,
             region:          region,
         }
