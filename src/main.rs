@@ -154,8 +154,6 @@ async fn main() -> Result<()> {
         Region::new().set_region(region)
     };
 
-    println!("{:?}", region);
-
     // This warning will trigger if compiled without the "s3" feature. We're
     // aware, allow it.
     #[allow(unused_mut)]
