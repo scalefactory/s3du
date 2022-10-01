@@ -35,6 +35,13 @@ pub struct ClientConfig {
     /// be present when compiled with the `s3` feature.
     #[cfg(feature = "s3")]
     pub object_versions: ObjectVersions,
+
+    /// The S3 Endpoint that we're going to connect to for bucket operations.
+    ///
+    /// This only has an effect when running in S3 mode and the field will only
+    /// be present when compiled with the `s3` feature.
+    #[cfg(feature = "s3")]
+    pub endpoint: Option<String>,
 }
 
 impl Default for ClientConfig {
@@ -43,15 +50,16 @@ impl Default for ClientConfig {
     /// If compiled with the `cloudwatch` feature, `CloudWatch` will be the
     /// default `ClientMode`, otherwise `S3` will be the default.
     ///
-    /// If compiled without the `s3` feature, the `object_versions` field
-    /// will be absent.
+    /// If compiled without the `s3` feature, the `endpoint` and
+    /// `object_versions` fields will be absent.
     ///
     /// ```rust
     /// ClientConfig {
     ///     bucket_name:     None,
+    ///     endpoint:        None,
     ///     mode:            ClientMode::CloudWatch,
-    ///     region:          Region::new(),
     ///     object_versions: ObjectVersions::Current,
+    ///     region:          Region::new(),
     /// }
     /// ```
     fn default() -> Self {
@@ -70,6 +78,10 @@ impl Default for ClientConfig {
             bucket_name: None,
             mode:        mode,
             region:      region,
+
+            #[cfg(feature = "s3")]
+            endpoint: None,
+
             #[cfg(feature = "s3")]
             object_versions: ObjectVersions::Current,
         }
