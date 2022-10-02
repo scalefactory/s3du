@@ -24,6 +24,9 @@ use common::{
 };
 
 #[cfg(feature = "s3")]
+use aws_smithy_http::endpoint::Endpoint;
+
+#[cfg(feature = "s3")]
 use common::ObjectVersions;
 
 /// CloudWatch Client.
@@ -129,11 +132,11 @@ async fn main() -> Result<()> {
     #[cfg(feature = "s3")]
     let region = if matches.contains_id("ENDPOINT") {
         if mode == ClientMode::S3 {
-            let endpoint = matches.get_one::<String>("ENDPOINT").unwrap();
+            let endpoint = matches.get_one::<Endpoint>("ENDPOINT").unwrap();
             let region = matches.get_one::<String>("REGION").unwrap();
 
             Region::new()
-                .set_endpoint(endpoint)
+                .set_endpoint(endpoint.clone())
                 .set_region(region)
         }
         else {
@@ -178,7 +181,7 @@ async fn main() -> Result<()> {
             config.object_versions = versions;
 
             // Set the endpoint
-            config.endpoint = matches.get_one::<String>("ENDPOINT").cloned();
+            config.endpoint = matches.get_one::<Endpoint>("ENDPOINT").cloned();
         }
     }
 

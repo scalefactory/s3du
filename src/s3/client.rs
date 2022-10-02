@@ -4,7 +4,6 @@
 use anyhow::Result;
 use aws_sdk_s3::client::Client as S3Client;
 use aws_sdk_s3::model::BucketLocationConstraint;
-use aws_smithy_http::endpoint::Endpoint;
 use crate::common::{
     BucketNames,
     ClientConfig,
@@ -43,7 +42,6 @@ impl Client {
             .region(region.clone());
 
         let s3config = if let Some(endpoint) = config.endpoint {
-            let endpoint = Endpoint::immutable(endpoint.parse().unwrap());
             s3config.endpoint_resolver(endpoint)
         }
         else {

@@ -16,7 +16,10 @@ use once_cell::sync::Lazy;
 use std::env;
 
 #[cfg(feature = "s3")]
-use url::Url;
+use aws_smithy_http::endpoint::Endpoint;
+
+#[cfg(feature = "s3")]
+use http::Uri;
 
 // Our fallback default region if we fail to find a region in the environment
 const FALLBACK_REGION: &str = "us-east-1";
@@ -124,34 +127,41 @@ fn is_valid_aws_s3_bucket_name(s: &str) -> Result<String, String> {
 ///   - Is not an AWS endpoint
 ///   - Parses as a valid URL
 #[cfg(feature = "s3")]
-fn is_valid_endpoint(s: &str) -> Result<String, String> {
+fn is_valid_endpoint(s: &str) -> Result<Endpoint, String> {
     // Endpoint cannot be an empty string
     if s.is_empty() {
         return Err("Endpoint cannot be empty".into());
     }
 
     // Endpoint must parse as a valid URL
-    let url = match Url::parse(s) {
+    let uri = match Uri::try_from(s) {
         Ok(u)  => Ok(u),
         Err(e) => Err(format!("Could not parse endpoint: {}", e)),
     }?;
 
     // We can only use HTTP or HTTPS URLs.
-    match url.scheme() {
+    let scheme = match uri.scheme_str() {
+        Some(scheme) => Ok(scheme),
+        None         => Err("No URI scheme found")
+    }?;
+
+    match scheme {
         "http" | "https" => Ok(()),
         scheme           => {
-            Err(format!("URL scheme must be http or https, found {}", scheme))
+            Err(format!("URI scheme must be http or https, found {}", scheme))
         },
     }?;
 
     // Endpoint cannot be an AWS endpoint
-    if let Some(hostname) = url.host_str() {
+    if let Some(hostname) = uri.host() {
         if hostname.contains("amazonaws.com") {
             return Err("Endpoint cannot be used to specify AWS endpoints".into());
         }
     }
 
-    Ok(s.to_string())
+    let endpoint = Endpoint::immutable(uri);
+
+    Ok(endpoint)
 }
 
 /// Create the command line parser
