@@ -12,7 +12,7 @@ use std::collections::HashMap;
 // This Hash is keyed by bucket name and contains a list of storage types that
 // are used within the bucket.
 /// Holds a HashMap of bucket names and their storage types.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct BucketMetrics(pub HashMap<String, StorageTypes>);
 
 impl BucketMetrics {

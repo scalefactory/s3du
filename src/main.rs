@@ -132,12 +132,9 @@ async fn main() -> Result<()> {
     #[cfg(feature = "s3")]
     let region = if matches.contains_id("ENDPOINT") {
         if mode == ClientMode::S3 {
-            let endpoint = matches.get_one::<Endpoint>("ENDPOINT").unwrap();
             let region = matches.get_one::<String>("REGION").unwrap();
 
-            Region::new()
-                .set_endpoint(endpoint.clone())
-                .set_region(region)
+            Region::new().set_region(region)
         }
         else {
             eprintln!("Error: Endpoint supplied but client mode is not S3");

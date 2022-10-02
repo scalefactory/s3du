@@ -5,25 +5,9 @@ use aws_types::region;
 use log::debug;
 use std::env;
 
-#[cfg(feature = "s3")]
-use aws_smithy_http::endpoint::Endpoint;
-
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Region {
-    region:   Option<region::Region>,
-
-    #[cfg(feature = "s3")]
-    endpoint: Option<Endpoint>,
-}
-
-// Endpoint doesn't impl PartialEq, do our own thing
-impl PartialEq for Region {
-    fn eq(&self, other: &Self) -> bool {
-        let eq_region = self.region == other.region;
-        let eq_endpoint = true;
-
-        eq_region && eq_endpoint
-    }
+    region: Option<region::Region>,
 }
 
 impl Region {
@@ -44,7 +28,6 @@ impl Region {
 
         Self {
             region: region,
-            ..Default::default()
         }
     }
 
@@ -54,14 +37,6 @@ impl Region {
             Some(region) => region.as_ref(),
             None         => "default",
         }
-    }
-
-    #[cfg(feature = "s3")]
-    pub fn set_endpoint(mut self, endpoint: Endpoint) -> Self {
-        debug!("Region endpoint set to: {:?}", endpoint);
-
-        self.endpoint = Some(endpoint);
-        self
     }
 
     pub fn set_region(mut self, region: &str) -> Self {
