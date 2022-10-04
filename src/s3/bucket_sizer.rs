@@ -64,7 +64,7 @@ impl BucketSizer for Client {
     }
 
     /// Return the size of `bucket`.
-    async fn bucket_size(&self, bucket: &Bucket) -> Result<usize> {
+    async fn bucket_size(&self, bucket: &Bucket) -> Result<u64> {
         debug!("bucket_size: Calculating size for '{}'", bucket.name);
 
         let size = self.size_objects(&bucket.name).await?;

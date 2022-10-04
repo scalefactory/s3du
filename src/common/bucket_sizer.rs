@@ -18,5 +18,5 @@ pub trait BucketSizer {
     async fn buckets(&self) -> Result<Buckets>;
 
     /// Returns the size of the given `bucket` in bytes.
-    async fn bucket_size(&self, bucket: &Bucket) -> Result<usize>;
+    async fn bucket_size(&self, bucket: &Bucket) -> Result<u64>;
 }

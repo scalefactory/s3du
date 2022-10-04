@@ -138,7 +138,7 @@ impl Client {
     }
 
     /// List in-progress multipart uploads
-    async fn size_multipart_uploads(&self, bucket: &str) -> Result<usize> {
+    async fn size_multipart_uploads(&self, bucket: &str) -> Result<u64> {
         let mut key_marker       = None;
         let mut size             = 0;
         let mut upload_id_marker = None;
@@ -177,7 +177,7 @@ impl Client {
     ///
     /// This will be used when the size of `All` or `NonCurrent` objects is
     /// requested.
-    async fn size_object_versions(&self, bucket: &str) -> Result<usize> {
+    async fn size_object_versions(&self, bucket: &str) -> Result<u64> {
         debug!("size_object_versions for '{}'", bucket);
 
         let mut next_key_marker        = None;
@@ -227,7 +227,7 @@ impl Client {
                             },
                         }
                     })
-                    .sum::<i64>() as usize;
+                    .sum::<i64>() as u64;
             }
 
             // Check if we need to continue processing bucket output and store
@@ -247,7 +247,7 @@ impl Client {
     /// Return the size of current object versions in the bucket.
     ///
     /// This will be used when the size of `Current` objects is requested.
-    async fn size_current_objects(&self, bucket: &str) -> Result<usize> {
+    async fn size_current_objects(&self, bucket: &str) -> Result<u64> {
         debug!("size_current_objects for '{}'", bucket);
 
         let mut continuation_token = None;
@@ -266,7 +266,7 @@ impl Client {
                 size += contents
                     .par_iter()
                     .map(|o| o.size)
-                    .sum::<i64>() as usize;
+                    .sum::<i64>() as u64;
             }
 
             // If the output was truncated (Some(true)), we should have a
@@ -285,7 +285,7 @@ impl Client {
 
     /// A wrapper to call the appropriate bucket sizing function depending on
     /// the `ObjectVersions` configuration the `Client` was created with.
-    pub async fn size_objects(&self, bucket: &str) -> Result<usize> {
+    pub async fn size_objects(&self, bucket: &str) -> Result<u64> {
         debug!("size_objects: '{}' with {:?}", bucket, self.object_versions);
 
         match self.object_versions {
@@ -315,7 +315,7 @@ impl Client {
         bucket: &str,
         key: &str,
         upload_id: &str,
-    ) -> Result<usize> {
+    ) -> Result<u64> {
         let mut part_number_marker = None;
         let mut size               = 0;
 
@@ -332,7 +332,7 @@ impl Client {
                 size += parts
                     .par_iter()
                     .map(|p| p.size)
-                    .sum::<i64>() as usize;
+                    .sum::<i64>() as u64;
             }
 
             if output.is_truncated {

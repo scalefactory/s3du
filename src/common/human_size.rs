@@ -11,7 +11,7 @@ pub trait HumanSize {
 }
 
 /// `HumanSize` trait implementation for `usize`.
-impl HumanSize for usize {
+impl HumanSize for u64 {
     /// Return `self` as a human friendly size if requested by `unit`.
     fn humansize(&self, unit: &SizeUnit) -> String {
         debug!("humansize: size {}, unit {:?}", self, unit);
@@ -42,9 +42,9 @@ mod tests {
         ];
 
         for test in tests {
-            let size: usize = test.0;
-            let unit        = SizeUnit::from_str(test.1).unwrap();
-            let expected    = test.2;
+            let size: u64 = test.0;
+            let unit      = SizeUnit::from_str(test.1).unwrap();
+            let expected  = test.2;
 
             let ret = size.humansize(&unit);
 

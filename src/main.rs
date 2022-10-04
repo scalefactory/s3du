@@ -73,7 +73,7 @@ impl Client {
         debug!("du: Got buckets: {:?}", buckets);
 
         // Track total size of all buckets.
-        let mut total_size: usize = 0;
+        let mut total_size: u64 = 0;
 
         // For each bucket name, get the size
         for bucket in buckets {

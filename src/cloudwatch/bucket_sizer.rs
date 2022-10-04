@@ -44,12 +44,12 @@ impl BucketSizer for Client {
     }
 
     /// Get the size of a given bucket
-    async fn bucket_size(&self, bucket: &Bucket) -> Result<usize> {
+    async fn bucket_size(&self, bucket: &Bucket) -> Result<u64> {
         let bucket_name = &bucket.name;
 
         debug!("bucket_size: Calculating size for '{}'", bucket_name);
 
-        let mut size: usize = 0;
+        let mut size = 0;
 
         let metric_statistics = self.get_metric_statistics(bucket).await?;
         for stats in metric_statistics {
@@ -85,7 +85,9 @@ impl BucketSizer for Client {
                 .expect("Could't unwrap average");
 
             // Add up the size of each storage type
-            size += bytes as usize;
+            // Do a bit of rounding here to get an integer value before
+            // converting to u64.
+            size += bytes.round() as u64;
         }
 
         debug!(
