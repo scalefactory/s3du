@@ -16,9 +16,6 @@ use once_cell::sync::Lazy;
 use std::env;
 
 #[cfg(feature = "s3")]
-use aws_smithy_http::endpoint::Endpoint;
-
-#[cfg(feature = "s3")]
 use http::Uri;
 
 // Our fallback default region if we fail to find a region in the environment
@@ -127,7 +124,7 @@ fn is_valid_aws_s3_bucket_name(s: &str) -> Result<String, String> {
 ///   - Is not an AWS endpoint
 ///   - Parses as a valid URL
 #[cfg(feature = "s3")]
-fn is_valid_endpoint(s: &str) -> Result<Endpoint, String> {
+fn is_valid_endpoint(s: &str) -> Result<String, String> {
     // Endpoint cannot be an empty string
     if s.is_empty() {
         return Err("Endpoint cannot be empty".into());
@@ -159,9 +156,7 @@ fn is_valid_endpoint(s: &str) -> Result<Endpoint, String> {
         }
     }
 
-    let endpoint = Endpoint::immutable(uri);
-
-    Ok(endpoint)
+    Ok(s.to_string())
 }
 
 /// Create the command line parser

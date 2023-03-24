@@ -71,8 +71,8 @@ impl BucketSizer for Client {
             // than a single datapoint, so we must sort them.
             // We sort so that the latest datapoint is at index 0 of the vec.
             datapoints.sort_by(|a, b| {
-                let a_timestamp = a.timestamp.unwrap().to_chrono_utc();
-                let b_timestamp = b.timestamp.unwrap().to_chrono_utc();
+                let a_timestamp = a.timestamp.unwrap().to_chrono_utc().unwrap();
+                let b_timestamp = b.timestamp.unwrap().to_chrono_utc().unwrap();
 
                 b_timestamp.cmp(&a_timestamp)
             });
@@ -120,17 +120,6 @@ mod tests {
     fn mock_client(
         data_file: Option<&str>,
     ) -> Client {
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsecrettoken".to_string()),
-        );
-
-        let conf = CloudWatchConfig::builder()
-            .credentials_provider(creds)
-            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
-            .build();
-
         let data = match data_file {
             None    => "".to_string(),
             Some(d) => {
@@ -152,9 +141,22 @@ mod tests {
             ),
         ];
 
-        let conn   = TestConnection::new(events);
-        let conn   = DynConnector::new(conn);
-        let client = CloudWatchClient::from_conf_conn(conf, conn);
+        let conn = TestConnection::new(events);
+        let conn = DynConnector::new(conn);
+
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsecrettoken".to_string()),
+        );
+
+        let conf = CloudWatchConfig::builder()
+            .credentials_provider(creds)
+            .http_connector(conn)
+            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .build();
+
+        let client = CloudWatchClient::from_conf(conf);
 
         Client {
             client:      client,

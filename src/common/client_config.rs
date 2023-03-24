@@ -7,9 +7,6 @@ use super::{
 };
 
 #[cfg(feature = "s3")]
-use aws_smithy_http::endpoint::Endpoint;
-
-#[cfg(feature = "s3")]
 use super::ObjectVersions;
 
 /// Client configuration.
@@ -44,7 +41,7 @@ pub struct ClientConfig {
     /// This only has an effect when running in S3 mode and the field will only
     /// be present when compiled with the `s3` feature.
     #[cfg(feature = "s3")]
-    pub endpoint: Option<Endpoint>,
+    pub endpoint: Option<String>,
 }
 
 impl Default for ClientConfig {

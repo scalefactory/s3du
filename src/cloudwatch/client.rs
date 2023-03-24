@@ -200,17 +200,6 @@ mod tests {
     fn mock_client(
         data_file: Option<&str>,
     ) -> Client {
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
-
-        let conf = CloudWatchConfig::builder()
-            .credentials_provider(creds)
-            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
-            .build();
-
         let data = match data_file {
             None    => "".to_string(),
             Some(d) => {
@@ -235,7 +224,19 @@ mod tests {
         let conn = TestConnection::new(events);
         let conn = DynConnector::new(conn);
 
-        let client = CloudWatchClient::from_conf_conn(conf, conn);
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
+
+        let conf = CloudWatchConfig::builder()
+            .credentials_provider(creds)
+            .http_connector(conn)
+            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .build();
+
+        let client = CloudWatchClient::from_conf(conf);
 
         Client {
             client:      client,

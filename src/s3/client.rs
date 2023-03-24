@@ -42,7 +42,7 @@ impl Client {
             .region(region.clone());
 
         let s3config = if let Some(endpoint) = config.endpoint {
-            s3config.endpoint_resolver(endpoint)
+            s3config.endpoint_url(endpoint)
         }
         else {
             s3config
@@ -365,17 +365,6 @@ mod tests {
         data_file: Vec<&str>,
         versions:  ObjectVersions,
     ) -> Client {
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
-
-        let conf = S3Config::builder()
-            .credentials_provider(creds)
-            .region(aws_sdk_s3::Region::new("eu-west-1"))
-            .build();
-
         // Get a vec of events based on the given data_files
         let events = data_file
             .iter()
@@ -402,7 +391,19 @@ mod tests {
         let conn = TestConnection::new(events);
         let conn = DynConnector::new(conn);
 
-        let client = S3Client::from_conf_conn(conf, conn);
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
+
+        let conf = S3Config::builder()
+            .credentials_provider(creds)
+            .http_connector(conn)
+            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .build();
+
+        let client = S3Client::from_conf(conf);
 
         Client {
             client:          client,
@@ -415,17 +416,6 @@ mod tests {
     // Create a mock client that returns a specific status code and empty
     // response body.
     async fn mock_client_with_status(status: u16) -> Client {
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
-
-        let conf = S3Config::builder()
-            .credentials_provider(creds)
-            .region(aws_sdk_s3::Region::new("eu-west-1"))
-            .build();
-
         let events = vec![
             (
                 // Request
@@ -444,7 +434,19 @@ mod tests {
         let conn = TestConnection::new(events);
         let conn = DynConnector::new(conn);
 
-        let client = S3Client::from_conf_conn(conf, conn);
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
+
+        let conf = S3Config::builder()
+            .credentials_provider(creds)
+            .http_connector(conn)
+            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .build();
+
+        let client = S3Client::from_conf(conf);
 
         Client {
             client:          client,

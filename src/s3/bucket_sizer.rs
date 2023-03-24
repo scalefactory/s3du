@@ -103,17 +103,6 @@ mod tests {
         responses: Vec<ResponseType<'a>>,
         versions:  ObjectVersions,
     ) -> Client {
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
-
-        let conf = S3Config::builder()
-            .credentials_provider(creds)
-            .region(aws_sdk_s3::Region::new("eu-west-1"))
-            .build();
-
         // Get a vec of events based on the given data_files
         let events = responses
             .iter()
@@ -153,7 +142,19 @@ mod tests {
         let conn = TestConnection::new(events);
         let conn = DynConnector::new(conn);
 
-        let client = S3Client::from_conf_conn(conf, conn);
+        let creds = Credentials::from_keys(
+            "ATESTCLIENT",
+            "atestsecretkey",
+            Some("atestsessiontoken".to_string()),
+        );
+
+        let conf = S3Config::builder()
+            .credentials_provider(creds)
+            .http_connector(conn)
+            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .build();
+
+        let client = S3Client::from_conf(conf);
 
         Client {
             client:          client,

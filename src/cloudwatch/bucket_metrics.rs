@@ -24,8 +24,8 @@ impl BucketMetrics {
         );
 
         self.0
-            .iter()
-            .map(|(k, _v)| k.to_string())
+            .keys()
+            .map(|k| k.to_string())
             .collect()
     }
 
