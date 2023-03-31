@@ -94,7 +94,7 @@ version = "0.4"
 optional = true
 
 [dependencies.clap]
-version = "4.1.13"
+version = "4.2.1"
 default-features = false
 features = [
     "cargo",
@@ -114,7 +114,7 @@ version = "0.2"
 optional = true
 
 [dependencies.tokio]
-version = "1.26"
+version = "1.27"
 features = [
     "macros",
     "rt-multi-thread",
