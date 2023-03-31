@@ -78,9 +78,9 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aws_sdk_s3::Credentials;
     use aws_sdk_s3::client::Client as S3Client;
     use aws_sdk_s3::config::Config as S3Config;
+    use aws_sdk_s3::config::Credentials;
     use aws_smithy_client::erase::DynConnector;
     use aws_smithy_client::test_connection::TestConnection;
     use aws_smithy_http::body::SdkBody;
@@ -151,7 +151,7 @@ mod tests {
         let conf = S3Config::builder()
             .credentials_provider(creds)
             .http_connector(conn)
-            .region(aws_sdk_s3::Region::new("eu-west-1"))
+            .region(aws_sdk_s3::config::Region::new("eu-west-1"))
             .build();
 
         let client = S3Client::from_conf(conf);

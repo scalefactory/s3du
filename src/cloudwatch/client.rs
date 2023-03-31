@@ -3,15 +3,15 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
-use aws_sdk_cloudwatch::model::{
+use aws_sdk_cloudwatch::types::{
     Dimension,
     DimensionFilter,
     Metric,
     StandardUnit,
     Statistic,
 };
-use aws_sdk_cloudwatch::output::GetMetricStatisticsOutput;
-use aws_sdk_cloudwatch::types::DateTime;
+use aws_sdk_cloudwatch::operation::get_metric_statistics::GetMetricStatisticsOutput;
+use aws_sdk_cloudwatch::primitives::DateTime;
 use aws_smithy_types_convert::date_time::DateTimeExt;
 use chrono::prelude::DateTime as ChronoDt;
 use chrono::prelude::Utc;
@@ -181,9 +181,9 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aws_sdk_cloudwatch::Credentials;
     use aws_sdk_cloudwatch::config::Config as CloudWatchConfig;
-    use aws_sdk_cloudwatch::model::{
+    use aws_sdk_cloudwatch::config::Credentials;
+    use aws_sdk_cloudwatch::types::{
         Datapoint,
         Dimension,
         Metric,
@@ -233,7 +233,7 @@ mod tests {
         let conf = CloudWatchConfig::builder()
             .credentials_provider(creds)
             .http_connector(conn)
-            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .region(aws_sdk_cloudwatch::config::Region::new("eu-west-1"))
             .build();
 
         let client = CloudWatchClient::from_conf(conf);

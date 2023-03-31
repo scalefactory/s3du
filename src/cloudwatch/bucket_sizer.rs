@@ -103,10 +103,10 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aws_sdk_cloudwatch::Credentials;
     use aws_sdk_cloudwatch::{
         client::Client as CloudWatchClient,
         config::Config as CloudWatchConfig,
+        config::Credentials,
     };
     use aws_smithy_client::erase::DynConnector;
     use aws_smithy_client::test_connection::TestConnection;
@@ -153,7 +153,7 @@ mod tests {
         let conf = CloudWatchConfig::builder()
             .credentials_provider(creds)
             .http_connector(conn)
-            .region(aws_sdk_cloudwatch::Region::new("eu-west-1"))
+            .region(aws_sdk_cloudwatch::config::Region::new("eu-west-1"))
             .build();
 
         let client = CloudWatchClient::from_conf(conf);

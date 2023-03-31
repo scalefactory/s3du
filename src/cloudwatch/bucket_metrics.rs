@@ -6,7 +6,7 @@ use crate::common::{
     StorageTypes,
 };
 use log::debug;
-use aws_sdk_cloudwatch::model::Metric;
+use aws_sdk_cloudwatch::types::Metric;
 use std::collections::HashMap;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
@@ -89,7 +89,7 @@ impl From<Vec<Metric>> for BucketMetrics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aws_sdk_cloudwatch::model::{
+    use aws_sdk_cloudwatch::types::{
         Dimension,
         Metric,
     };
