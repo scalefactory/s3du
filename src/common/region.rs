@@ -22,7 +22,7 @@ impl Region {
         let region = possibilities
             .iter()
             .find_map(|region| region.as_ref().ok())
-            .map(|region| region::Region::new(region.to_owned()));
+            .map(|region| region::Region::new(region.clone()));
 
         debug!("AWS_REGION in environment is: {:?}", region);
 
@@ -53,7 +53,7 @@ impl ProvideRegion for Region {
     // allow us to pass our Region into AWS SDK functions expecting an AWS
     // Region.
     fn region(&self) -> future::ProvideRegion {
-        future::ProvideRegion::ready(self.region.to_owned())
+        future::ProvideRegion::ready(self.region.clone())
     }
 }
 
@@ -62,6 +62,6 @@ impl ProvideRegion for &Region {
     // allow us to pass our Region into AWS SDK functions expecting an AWS
     // Region.
     fn region(&self) -> future::ProvideRegion {
-        future::ProvideRegion::ready(self.region.to_owned())
+        future::ProvideRegion::ready(self.region.clone())
     }
 }

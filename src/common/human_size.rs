@@ -19,9 +19,10 @@ impl HumanSize for u64 {
         // Unwrap should be fine here, usize cannot be negative, so file_size
         // shouldn't error.
         match unit {
-            SizeUnit::Binary(unit)  => format_size(*self, unit),
-            SizeUnit::Bytes         => self.to_string(),
-            SizeUnit::Decimal(unit) => format_size(*self, unit),
+            SizeUnit::Bytes => self.to_string(),
+            SizeUnit::Binary(unit) | SizeUnit::Decimal(unit) => {
+                format_size(*self, unit)
+            },
         }
     }
 }

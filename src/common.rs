@@ -8,7 +8,7 @@ mod bucket;
 /// The `BucketSizer` trait.
 mod bucket_sizer;
 
-/// `ClientConfig` holds configuration for the CloudWatch and S3 `Client`s.
+/// `ClientConfig` holds configuration for the `CloudWatch` and S3 `Client`s.
 mod client_config;
 
 /// `ClientMode` enum is used to select which `Client` will be used.
@@ -40,6 +40,6 @@ pub use size_unit::*;
 #[cfg(feature = "s3")]
 pub use object_versions::*;
 
-/// `BucketNames` is a convenience type used by both the CloudWatch and S3
+/// `BucketNames` is a convenience type used by both the `CloudWatch` and S3
 /// clients.
 pub type BucketNames = Vec<String>;

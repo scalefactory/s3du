@@ -3,7 +3,11 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use aws_sdk_s3::client::Client as S3Client;
-use aws_sdk_s3::types::BucketLocationConstraint;
+use aws_sdk_s3::types::{
+    BucketLocationConstraint,
+    Object,
+    Part,
+};
 use crate::common::{
     BucketNames,
     ClientConfig,
@@ -68,10 +72,10 @@ impl Client {
 
         let output = self.client.list_buckets().send().await?;
 
-        let bucket_names = if let Some(buckets) = output.buckets {
+        let bucket_names = if let Some(buckets) = output.buckets() {
             buckets
                 .par_iter()
-                .filter_map(|b| b.name.to_owned())
+                .filter_map(|b| b.name.clone())
                 .collect()
         }
         else {
@@ -101,7 +105,7 @@ impl Client {
         // Location constraints for sufficiently old buckets in S3 may not
         // quite meet expectations. These returns are badly documented and the
         // assumptions here are based on what the web console does.
-        let location = match output.location_constraint {
+        let location = match output.location_constraint() {
             Some(BucketLocationConstraint::Eu) => "eu-west-1".to_string(),
             Some(location)                     => location.as_str().to_string(),
             None                               => "us-east-1".to_string(),
@@ -151,19 +155,22 @@ impl Client {
                 .send()
                 .await?;
 
-            if let Some(uploads) = output.uploads {
+            if let Some(uploads) = output.uploads() {
                 // No iterator here since we need to call an async method.
                 for upload in uploads {
-                    let key       = upload.key.expect("upload key");
-                    let upload_id = upload.upload_id.expect("upload_id");
+                    let key       = upload.key().expect("upload key");
+                    let upload_id = upload.upload_id().expect("upload_id");
 
-                    size += self.size_parts(bucket, &key, &upload_id).await?;
+                    size += self.size_parts(bucket, key, upload_id).await?;
                 }
             }
 
-            if output.is_truncated {
-                key_marker       = output.next_key_marker;
-                upload_id_marker = output.next_upload_id_marker;
+            if output.is_truncated() {
+                key_marker = output.next_key_marker()
+                    .map(ToOwned::to_owned);
+
+                upload_id_marker = output.next_upload_id_marker()
+                    .map(ToOwned::to_owned);
             }
             else {
                 break;
@@ -195,7 +202,7 @@ impl Client {
 
             // Depending on which object versions we're paying attention to,
             // we may or may not filter here.
-            if let Some(versions) = output.versions {
+            if let Some(versions) = output.versions() {
                 size += versions
                     .par_iter()
                     .map(|v| {
@@ -207,10 +214,10 @@ impl Client {
                         //
                         // Multipart isn't handled here.
                         match self.object_versions {
-                            ObjectVersions::All     => v.size,
+                            ObjectVersions::All     => v.size(),
                             ObjectVersions::Current => {
-                                if v.is_latest {
-                                    v.size
+                                if v.is_latest() {
+                                    v.size()
                                 }
                                 else {
                                     0
@@ -218,11 +225,11 @@ impl Client {
                             },
                             ObjectVersions::Multipart => unreachable!(),
                             ObjectVersions::NonCurrent => {
-                                if v.is_latest {
+                                if v.is_latest() {
                                     0
                                 }
                                 else {
-                                    v.size
+                                    v.size()
                                 }
                             },
                         }
@@ -232,9 +239,12 @@ impl Client {
 
             // Check if we need to continue processing bucket output and store
             // the continuation tokens for the next loop if so.
-            if output.is_truncated {
-                next_key_marker        = output.next_key_marker;
-                next_version_id_marker = output.next_version_id_marker;
+            if output.is_truncated() {
+                next_key_marker = output.next_key_marker()
+                    .map(ToOwned::to_owned);
+
+                next_version_id_marker = output.next_version_id_marker()
+                    .map(ToOwned::to_owned);
             }
             else {
                 break;
@@ -262,18 +272,19 @@ impl Client {
                 .await?;
 
             // Process the contents and add up the sizes
-            if let Some(contents) = output.contents {
+            if let Some(contents) = output.contents() {
                 size += contents
                     .par_iter()
-                    .map(|o| o.size)
+                    .map(Object::size)
                     .sum::<i64>() as u64;
             }
 
             // If the output was truncated (Some(true)), we should have a
             // next_continuation_token.
             // If it wasn't, (Some(false) | None) we're done and can break.
-            if output.is_truncated {
-                continuation_token = output.next_continuation_token;
+            if output.is_truncated() {
+                continuation_token = output.next_continuation_token()
+                    .map(ToOwned::to_owned);
             }
             else {
                 break;
@@ -328,15 +339,16 @@ impl Client {
                 .send()
                 .await?;
 
-            if let Some(parts) = output.parts {
+            if let Some(parts) = output.parts() {
                 size += parts
                     .par_iter()
-                    .map(|p| p.size)
+                    .map(Part::size)
                     .sum::<i64>() as u64;
             }
 
-            if output.is_truncated {
-                part_number_marker = output.next_part_number_marker;
+            if output.is_truncated() {
+                part_number_marker = output.next_part_number_marker()
+                    .map(ToOwned::to_owned);
             }
             else {
                 break;

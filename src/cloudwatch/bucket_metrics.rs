@@ -8,10 +8,11 @@ use crate::common::{
 use log::debug;
 use aws_sdk_cloudwatch::types::Metric;
 use std::collections::HashMap;
+use std::string::ToString;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
 // are used within the bucket.
-/// Holds a HashMap of bucket names and their storage types.
+/// Holds a `HashMap` of bucket names and their storage types.
 #[derive(Debug, Eq, PartialEq)]
 pub struct BucketMetrics(pub HashMap<String, StorageTypes>);
 
@@ -25,7 +26,7 @@ impl BucketMetrics {
 
         self.0
             .keys()
-            .map(|k| k.to_string())
+            .map(ToString::to_string)
             .collect()
     }
 
@@ -48,27 +49,35 @@ impl From<Vec<Metric>> for BucketMetrics {
 
         for metric in metrics {
             // Get the dimensions if any, otherwise skip to next iteration
-            let dimensions = match metric.dimensions {
+            let dimensions = match metric.dimensions() {
                 Some(d) => d,
                 None    => continue,
             };
 
             // Storage for what we'll pull out of the dimensions
-            let mut name          = String::new();
-            let mut storage_type  = String::new();
+            let mut name         = String::new();
+            let mut storage_type = String::new();
 
             // Process the dimensions, taking the bucket name and storage types
             for dimension in dimensions {
                 // Extract the dimension name
-                let dname = match dimension.name {
+                let dimension_name = match dimension.name() {
                     Some(n) => n,
                     None    => continue,
                 };
 
-                match dname.as_ref() {
-                    "BucketName"  => name         = dimension.value.unwrap(),
-                    "StorageType" => storage_type = dimension.value.unwrap(),
-                    _             => {},
+                match dimension_name {
+                    "BucketName" => {
+                        name = dimension.value()
+                            .map(ToOwned::to_owned)
+                            .unwrap();
+                    },
+                    "StorageType" => {
+                        storage_type = dimension.value()
+                            .map(ToOwned::to_owned)
+                            .unwrap();
+                    },
+                    _ => {},
                 }
             }
 

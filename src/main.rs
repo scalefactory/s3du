@@ -26,7 +26,7 @@ use common::{
 #[cfg(feature = "s3")]
 use common::ObjectVersions;
 
-/// CloudWatch Client.
+/// `CloudWatch` Client.
 #[cfg(feature = "cloudwatch")]
 mod cloudwatch;
 
@@ -80,14 +80,14 @@ impl Client {
 
             let size = size.humansize(&unit);
 
-            println!("{size}\t{bucket}", size=size, bucket=bucket.name);
+            println!("{size}\t{bucket}", bucket=bucket.name);
         }
 
         let total_size = total_size.humansize(&unit);
 
         // Display the total size the same way du(1) would, the total size
         // followed by a `.`.
-        println!("{size}\t.", size=total_size);
+        println!("{total_size}\t.");
 
         Ok(())
     }

@@ -3,13 +3,13 @@
 #![deny(missing_docs)]
 
 /// `BucketMetrics` handles returning the bucket names and storage types from
-/// discovered CloudWatch metrics.
+/// discovered `CloudWatch` metrics.
 mod bucket_metrics;
 
-/// Implementation of the `BucketSizer` trait for our CloudWatch `Client`.
+/// Implementation of the `BucketSizer` trait for our `CloudWatch` `Client`.
 mod bucket_sizer;
 
-/// CloudWatch `Client`.
+/// `CloudWatch` `Client`.
 mod client;
 
 pub use client::*;

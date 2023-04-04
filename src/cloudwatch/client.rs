@@ -3,6 +3,8 @@
 #![deny(missing_docs)]
 use anyhow::Result;
 use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
+use aws_sdk_cloudwatch::operation::get_metric_statistics::GetMetricStatisticsOutput;
+use aws_sdk_cloudwatch::primitives::DateTime;
 use aws_sdk_cloudwatch::types::{
     Dimension,
     DimensionFilter,
@@ -10,8 +12,6 @@ use aws_sdk_cloudwatch::types::{
     StandardUnit,
     Statistic,
 };
-use aws_sdk_cloudwatch::operation::get_metric_statistics::GetMetricStatisticsOutput;
-use aws_sdk_cloudwatch::primitives::DateTime;
 use aws_smithy_types_convert::date_time::DateTimeExt;
 use chrono::prelude::DateTime as ChronoDt;
 use chrono::prelude::Utc;
@@ -22,7 +22,7 @@ use crate::common::{
 };
 use log::debug;
 
-/// A CloudWatch `Client`
+/// A `CloudWatch` `Client`
 pub struct Client {
     /// The AWS SDK `CloudWatchClient`.
     pub client: CloudWatchClient,
@@ -55,7 +55,7 @@ impl Client {
     /// Returns a `Vec` of `GetMetricStatisticsOutput` for the given `Bucket`.
     ///
     /// This returns a `Vec` because there is one `GetMetricStatisticsOutput`
-    /// for each S3 bucket storage type that CloudWatch has statistics for.
+    /// for each S3 bucket storage type that `CloudWatch` has statistics for.
     pub async fn get_metric_statistics(
         &self,
         bucket: &Bucket,
@@ -69,7 +69,7 @@ impl Client {
         let start_time         = DateTime::from_chrono_utc(now - (one_day * 2));
 
         let storage_types = match &bucket.storage_types {
-            Some(st) => st.to_owned(),
+            Some(st) => st.clone(),
             None     => Vec::new(),
         };
 
@@ -79,11 +79,11 @@ impl Client {
             let dimensions = vec![
                 Dimension::builder()
                     .name("BucketName")
-                    .value(bucket.name.to_owned())
+                    .value(bucket.name.clone())
                     .build(),
                 Dimension::builder()
                     .name("StorageType")
-                    .value(storage_type.to_owned())
+                    .value(storage_type.clone())
                     .build(),
             ];
 
@@ -139,7 +139,7 @@ impl Client {
             Some(bucket_name) => {
                 let filter = DimensionFilter::builder()
                     .name("BucketName")
-                    .value(bucket_name.to_owned())
+                    .value(bucket_name.clone())
                     .build();
 
                 Some(vec![filter])
@@ -161,13 +161,13 @@ impl Client {
             debug!("list_metrics: API returned: {:#?}", output);
 
             // If we get any metrics, append them to our vec
-            if let Some(m) = output.metrics {
-                metrics.append(&mut m.clone());
+            if let Some(m) = output.metrics() {
+                metrics.append(&mut m.to_vec());
             }
 
             // If there was a next token, use it, otherwise the loop is done.
-            match output.next_token {
-                Some(t) => next_token = Some(t),
+            match output.next_token() {
+                Some(t) => next_token = Some(t.to_string()),
                 None    => break,
             };
         }

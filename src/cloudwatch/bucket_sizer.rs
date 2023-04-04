@@ -29,7 +29,7 @@ impl BucketSizer for Client {
         let mut buckets = Buckets::new();
 
         for bucket in metrics.bucket_names() {
-            let storage_types = metrics.storage_types(&bucket).to_owned();
+            let storage_types = metrics.storage_types(&bucket).clone();
 
             let bucket = Bucket {
                 name:          bucket,

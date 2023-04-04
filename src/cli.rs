@@ -98,7 +98,7 @@ const OBJECT_VERSIONS: &[&str] = &[
 /// Ensures that a given bucket name is valid.
 ///
 /// This validation is taken from
-/// https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html.
+/// <https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html>.
 /// We validate based on the legacy standard for compatibility.
 fn is_valid_aws_s3_bucket_name(s: &str) -> Result<String, String> {
     // Bucket name cannot be empty
@@ -133,7 +133,7 @@ fn is_valid_endpoint(s: &str) -> Result<String, String> {
     // Endpoint must parse as a valid URL
     let uri = match Uri::try_from(s) {
         Ok(u)  => Ok(u),
-        Err(e) => Err(format!("Could not parse endpoint: {}", e)),
+        Err(e) => Err(format!("Could not parse endpoint: {e}")),
     }?;
 
     // We can only use HTTP or HTTPS URLs.
@@ -145,7 +145,7 @@ fn is_valid_endpoint(s: &str) -> Result<String, String> {
     match scheme {
         "http" | "https" => Ok(()),
         scheme           => {
-            Err(format!("URI scheme must be http or https, found {}", scheme))
+            Err(format!("URI scheme must be http or https, found {scheme}"))
         },
     }?;
 
