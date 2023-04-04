@@ -3,8 +3,8 @@
 ## v1.2.0
 
   - Switch from [Rusoto] to the official [AWS SDK Rust]
-  - Update [clap] to 4.0.x
-  - Bump MSRV to 1.62.1
+  - Update [clap] to 4.x
+  - Bump MSRV to 1.64.0
   - Switch from [lazy_static] to [once_cell]
 
 ## v1.1.0
