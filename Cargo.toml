@@ -26,6 +26,10 @@ exclude = [
     ".github",
 ]
 
+[profile.release]
+codegen-units = 1
+lto = true
+
 [features]
 # Build with both CloudWatch and S3 support by default
 default = [
