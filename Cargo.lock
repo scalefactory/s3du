@@ -203,9 +203,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-cloudwatch"
-version = "0.25.1"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97e06e0d634bf7de278de052ea3d9a2d6221589b795060455f91f25ef362b85c"
+checksum = "7263a92103fcd82ad1cb882274ece03a84a1041d08a487bb3d783c60acdf8f49"
 dependencies = [
  "aws-credential-types",
  "aws-endpoint",
@@ -230,9 +230,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-s3"
-version = "0.25.1"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "392b9811ca489747ac84349790e49deaa1f16631949e7dd4156000251c260eae"
+checksum = "fba197193cbb4bcb6aad8d99796b2291f36fa89562ded5d4501363055b0de89f"
 dependencies = [
  "aws-credential-types",
  "aws-endpoint",
