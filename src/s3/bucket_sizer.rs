@@ -8,8 +8,8 @@ use crate::common::{
     Buckets,
     BucketSizer,
 };
-use log::debug;
 use super::client::Client;
+use tracing::debug;
 
 #[async_trait]
 impl BucketSizer for Client {

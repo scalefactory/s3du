@@ -5,10 +5,10 @@ use crate::common::{
     BucketNames,
     StorageTypes,
 };
-use log::debug;
 use aws_sdk_cloudwatch::types::Metric;
 use std::collections::HashMap;
 use std::string::ToString;
+use tracing::debug;
 
 // This Hash is keyed by bucket name and contains a list of storage types that
 // are used within the bucket.

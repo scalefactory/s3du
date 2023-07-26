@@ -11,9 +11,9 @@ use clap::{
     Command,
 };
 use clap::builder::PossibleValuesParser;
-use log::debug;
 use once_cell::sync::Lazy;
 use std::env;
+use tracing::debug;
 
 #[cfg(feature = "s3")]
 use http::Uri;

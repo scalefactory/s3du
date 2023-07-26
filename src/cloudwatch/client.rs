@@ -20,7 +20,7 @@ use crate::common::{
     Bucket,
     ClientConfig,
 };
-use log::debug;
+use tracing::debug;
 
 /// A `CloudWatch` `Client`
 pub struct Client {

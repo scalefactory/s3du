@@ -14,8 +14,8 @@ use crate::common::{
     ObjectVersions,
     Region,
 };
-use log::debug;
 use rayon::prelude::*;
+use tracing::debug;
 
 /// The S3 `Client`.
 pub struct Client {

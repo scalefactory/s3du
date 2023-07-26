@@ -2,8 +2,8 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 use humansize::format_size;
-use log::debug;
 use super::SizeUnit;
+use tracing::debug;
 
 /// `HumanSize` trait.
 pub trait HumanSize {

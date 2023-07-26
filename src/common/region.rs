@@ -2,8 +2,8 @@
 use aws_config::meta::region::future;
 use aws_config::meta::region::ProvideRegion;
 use aws_types::region;
-use log::debug;
 use std::env;
+use tracing::debug;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Region {

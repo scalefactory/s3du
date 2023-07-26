@@ -3,11 +3,11 @@
 #![deny(missing_docs)]
 #![allow(clippy::redundant_field_names)]
 use anyhow::Result;
-use log::{
+use std::str::FromStr;
+use tracing::{
     debug,
     info,
 };
-use std::str::FromStr;
 
 /// Command line parsing.
 mod cli;
@@ -96,7 +96,7 @@ impl Client {
 /// Entry point
 #[tokio::main]
 async fn main() -> Result<()> {
-    pretty_env_logger::init();
+    tracing_subscriber::fmt::init();
 
     // Parse the CLI
     let matches = cli::parse_args();
