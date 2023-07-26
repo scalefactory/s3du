@@ -54,9 +54,8 @@ impl BucketSizer for Client {
         let metric_statistics = self.get_metric_statistics(bucket).await?;
         for stats in metric_statistics {
             // If we don't get any datapoints, proceed to the next input.
-            let mut datapoints = match stats.datapoints {
-                Some(d) => d,
-                None    => continue,
+            let Some(mut datapoints) = stats.datapoints else {
+                continue
             };
 
             // It's possible that CloudWatch could return nothing. Return an

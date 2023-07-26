@@ -49,9 +49,8 @@ impl From<Vec<Metric>> for BucketMetrics {
 
         for metric in metrics {
             // Get the dimensions if any, otherwise skip to next iteration
-            let dimensions = match metric.dimensions() {
-                Some(d) => d,
-                None    => continue,
+            let Some(dimensions) = metric.dimensions() else {
+                continue
             };
 
             // Storage for what we'll pull out of the dimensions
@@ -61,9 +60,8 @@ impl From<Vec<Metric>> for BucketMetrics {
             // Process the dimensions, taking the bucket name and storage types
             for dimension in dimensions {
                 // Extract the dimension name
-                let dimension_name = match dimension.name() {
-                    Some(n) => n,
-                    None    => continue,
+                let Some(dimension_name) = dimension.name() else {
+                    continue
                 };
 
                 match dimension_name {
