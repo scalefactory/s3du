@@ -81,9 +81,11 @@ mod tests {
     use aws_sdk_s3::client::Client as S3Client;
     use aws_sdk_s3::config::Config as S3Config;
     use aws_sdk_s3::config::Credentials;
-    use aws_smithy_client::erase::DynConnector;
-    use aws_smithy_client::test_connection::TestConnection;
-    use aws_smithy_http::body::SdkBody;
+    use aws_smithy_runtime::client::http::test_util::{
+        ReplayEvent,
+        StaticReplayClient,
+    };
+    use aws_smithy_types::body::SdkBody;
     use crate::common::{
         ObjectVersions,
         Region,
@@ -112,7 +114,7 @@ mod tests {
                         let path = Path::new("test-data").join(file);
                         let data = fs::read_to_string(path).unwrap();
 
-                        (
+                        ReplayEvent::new(
                             http::Request::builder()
                                 .body(SdkBody::from("request body"))
                                 .unwrap(),
@@ -124,7 +126,7 @@ mod tests {
                         )
                     },
                     ResponseType::WithStatus(status) => {
-                        (
+                        ReplayEvent::new(
                             http::Request::builder()
                                 .body(SdkBody::from("request body"))
                                 .unwrap(),
@@ -139,8 +141,7 @@ mod tests {
             })
             .collect();
 
-        let conn = TestConnection::new(events);
-        let conn = DynConnector::new(conn);
+        let http_client = StaticReplayClient::new(events);
 
         let creds = Credentials::from_keys(
             "ATESTCLIENT",
@@ -150,7 +151,7 @@ mod tests {
 
         let conf = S3Config::builder()
             .credentials_provider(creds)
-            .http_connector(conn)
+            .http_client(http_client)
             .region(aws_sdk_s3::config::Region::new("eu-west-1"))
             .build();
 

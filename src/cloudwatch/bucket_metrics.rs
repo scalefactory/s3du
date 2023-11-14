@@ -48,8 +48,9 @@ impl From<Vec<Metric>> for BucketMetrics {
         let mut bucket_metrics = HashMap::new();
 
         for metric in metrics {
-            // Get the dimensions if any, otherwise skip to next iteration
-            let Some(dimensions) = metric.dimensions() else {
+            let dimensions = metric.dimensions();
+
+            if dimensions.is_empty() {
                 continue
             };
 

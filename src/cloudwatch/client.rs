@@ -1,7 +1,10 @@
 // Implement the CloudWatch Client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use anyhow::Result;
+use anyhow::{
+    Context,
+    Result,
+};
 use aws_sdk_cloudwatch::client::Client as CloudWatchClient;
 use aws_sdk_cloudwatch::operation::get_metric_statistics::GetMetricStatisticsOutput;
 use aws_sdk_cloudwatch::primitives::DateTime;
@@ -12,15 +15,17 @@ use aws_sdk_cloudwatch::types::{
     StandardUnit,
     Statistic,
 };
-use aws_smithy_types_convert::date_time::DateTimeExt;
-use chrono::prelude::DateTime as ChronoDt;
-use chrono::prelude::Utc;
-use chrono::Duration;
 use crate::common::{
     Bucket,
     ClientConfig,
 };
+use std::time::{
+    Duration,
+    SystemTime,
+};
 use tracing::debug;
+
+const ONE_DAY: Duration = Duration::from_secs(86_400);
 
 /// A `CloudWatch` `Client`
 pub struct Client {
@@ -47,8 +52,8 @@ impl Client {
         let client = CloudWatchClient::new(&config);
 
         Self {
-            client:      client,
-            bucket_name: bucket_name,
+            client,
+            bucket_name,
         }
     }
 
@@ -63,10 +68,11 @@ impl Client {
         debug!("get_metric_statistics: Processing {:?}", bucket);
 
         // These are used repeatedly while looping, just prepare them once.
-        let now: ChronoDt<Utc> = Utc::now();
-        let one_day            = Duration::days(1);
-        let period             = one_day.num_seconds() as i32;
-        let start_time         = DateTime::from_chrono_utc(now - (one_day * 2));
+        let now = SystemTime::now();
+        let start_time = DateTime::from(now - (ONE_DAY * 2));
+
+        let period = i32::try_from(ONE_DAY.as_secs())
+            .context("period")?;
 
         let storage_types = match &bucket.storage_types {
             Some(st) => st.clone(),
@@ -88,7 +94,7 @@ impl Client {
             ];
 
             let input = self.client.get_metric_statistics()
-                .end_time(DateTime::from_chrono_utc(now))
+                .end_time(DateTime::from(now))
                 .metric_name("BucketSizeBytes")
                 .namespace("AWS/S3")
                 .period(period)
@@ -161,9 +167,8 @@ impl Client {
             debug!("list_metrics: API returned: {:#?}", output);
 
             // If we get any metrics, append them to our vec
-            if let Some(m) = output.metrics() {
-                metrics.append(&mut m.to_vec());
-            }
+            let metric = output.metrics();
+            metrics.append(&mut metric.to_vec());
 
             // If there was a next token, use it, otherwise the loop is done.
             match output.next_token() {
@@ -183,14 +188,17 @@ mod tests {
     use super::*;
     use aws_sdk_cloudwatch::config::Config as CloudWatchConfig;
     use aws_sdk_cloudwatch::config::Credentials;
+    use aws_sdk_cloudwatch::primitives::DateTimeFormat;
     use aws_sdk_cloudwatch::types::{
         Datapoint,
         Dimension,
         Metric,
     };
-    use aws_smithy_client::erase::DynConnector;
-    use aws_smithy_client::test_connection::TestConnection;
-    use aws_smithy_http::body::SdkBody;
+    use aws_smithy_runtime::client::http::test_util::{
+        ReplayEvent,
+        StaticReplayClient,
+    };
+    use aws_smithy_types::body::SdkBody;
     use pretty_assertions::assert_eq;
     use std::fs;
     use std::path::Path;
@@ -208,8 +216,8 @@ mod tests {
             },
         };
 
-        let events = vec![
-            (
+        let http_client = StaticReplayClient::new(vec![
+            ReplayEvent::new(
                 http::Request::builder()
                     .body(SdkBody::from("request body"))
                     .unwrap(),
@@ -218,11 +226,8 @@ mod tests {
                     .status(200)
                     .body(SdkBody::from(data))
                     .unwrap(),
-            ),
-        ];
-
-        let conn = TestConnection::new(events);
-        let conn = DynConnector::new(conn);
+                ),
+        ]);
 
         let creds = Credentials::from_keys(
             "ATESTCLIENT",
@@ -232,14 +237,14 @@ mod tests {
 
         let conf = CloudWatchConfig::builder()
             .credentials_provider(creds)
-            .http_connector(conn)
+            .http_client(http_client)
             .region(aws_sdk_cloudwatch::config::Region::new("eu-west-1"))
             .build();
 
         let client = CloudWatchClient::from_conf(conf);
 
         Client {
-            client:      client,
+            client,
             bucket_name: None,
         }
     }
@@ -264,13 +269,15 @@ mod tests {
             .await
             .unwrap();
 
-        let timestamp = ChronoDt::parse_from_rfc3339("2020-03-01T20:59:00Z")
-            .unwrap();
+        let timestamp = DateTime::from_str(
+            "2020-03-01T20:59:00Z",
+            DateTimeFormat::DateTime,
+        ).unwrap();
 
         let datapoints = vec![
             Datapoint::builder()
                 .average(123456789.0)
-                .timestamp(DateTime::from_chrono_fixed(timestamp))
+                .timestamp(timestamp)
                 .unit(StandardUnit::Bytes)
                 .build(),
         ];

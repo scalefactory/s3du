@@ -27,7 +27,7 @@ impl Region {
         debug!("AWS_REGION in environment is: {:?}", region);
 
         Self {
-            region: region,
+            region,
         }
     }
 

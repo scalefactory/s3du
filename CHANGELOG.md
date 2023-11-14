@@ -4,8 +4,9 @@
 
   - Switch from [Rusoto] to the official [AWS SDK Rust]
   - Update [clap] to 4.x
-  - Bump MSRV to 1.65.0
+  - Bump MSRV to 1.70.0
   - Switch from [lazy_static] to [once_cell]
+  - Simplify code in CloudWatch mode removing the need for [chrono]
 
 ## v1.1.0
 

@@ -1,7 +1,10 @@
 // Implements the S3 Client
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-use anyhow::Result;
+use anyhow::{
+    Context,
+    Result,
+};
 use aws_sdk_s3::client::Client as S3Client;
 use aws_sdk_s3::types::{
     BucketLocationConstraint,
@@ -56,13 +59,13 @@ impl Client {
             .load()
             .await;
 
-        let s3client = S3Client::new(&s3config);
+        let client = S3Client::new(&s3config);
 
         Self {
-            client:          s3client,
+            client,
+            region,
             bucket_name:     config.bucket_name,
             object_versions: config.object_versions,
-            region:          region,
         }
     }
 
@@ -72,15 +75,10 @@ impl Client {
 
         let output = self.client.list_buckets().send().await?;
 
-        let bucket_names = if let Some(buckets) = output.buckets() {
-            buckets
-                .par_iter()
-                .filter_map(|b| b.name.clone())
-                .collect()
-        }
-        else {
-            Vec::new()
-        };
+        let bucket_names = output.buckets()
+            .par_iter()
+            .filter_map(|bucket| bucket.name.clone())
+            .collect();
 
         debug!("Found buckets: {:?}", bucket_names);
 
@@ -155,14 +153,12 @@ impl Client {
                 .send()
                 .await?;
 
-            if let Some(uploads) = output.uploads() {
-                // No iterator here since we need to call an async method.
-                for upload in uploads {
-                    let key       = upload.key().expect("upload key");
-                    let upload_id = upload.upload_id().expect("upload_id");
+            // No iterator here since we need to call an async method.
+            for upload in output.uploads() {
+                let key       = upload.key().expect("upload key");
+                let upload_id = upload.upload_id().expect("upload_id");
 
-                    size += self.size_parts(bucket, key, upload_id).await?;
-                }
+                size += self.size_parts(bucket, key, upload_id).await?;
             }
 
             if output.is_truncated() {
@@ -202,40 +198,41 @@ impl Client {
 
             // Depending on which object versions we're paying attention to,
             // we may or may not filter here.
-            if let Some(versions) = output.versions() {
-                size += versions
-                    .par_iter()
-                    .map(|v| {
-                        // Here we take our object version selection into
-                        // account.
-                        //
-                        // We return a size of 0 if we aren't interested in an
-                        // object version.
-                        //
-                        // Multipart isn't handled here.
-                        match self.object_versions {
-                            ObjectVersions::All     => v.size(),
-                            ObjectVersions::Current => {
-                                if v.is_latest() {
-                                    v.size()
-                                }
-                                else {
-                                    0
-                                }
-                            },
-                            ObjectVersions::Multipart => unreachable!(),
-                            ObjectVersions::NonCurrent => {
-                                if v.is_latest() {
-                                    0
-                                }
-                                else {
-                                    v.size()
-                                }
-                            },
-                        }
-                    })
-                    .sum::<i64>() as u64;
-            }
+            let version_size = output.versions()
+                .par_iter()
+                .map(|v| {
+                    // Here we take our object version selection into
+                    // account.
+                    //
+                    // We return a size of 0 if we aren't interested in an
+                    // object version.
+                    //
+                    // Multipart isn't handled here.
+                    match self.object_versions {
+                        ObjectVersions::All     => v.size(),
+                        ObjectVersions::Current => {
+                            if v.is_latest() {
+                                v.size()
+                            }
+                            else {
+                                0
+                            }
+                        },
+                        ObjectVersions::Multipart => unreachable!(),
+                        ObjectVersions::NonCurrent => {
+                            if v.is_latest() {
+                                0
+                            }
+                            else {
+                                v.size()
+                            }
+                        },
+                    }
+                })
+                .sum::<i64>();
+
+            size += u64::try_from(version_size)
+                .context("version size")?;
 
             // Check if we need to continue processing bucket output and store
             // the continuation tokens for the next loop if so.
@@ -272,12 +269,13 @@ impl Client {
                 .await?;
 
             // Process the contents and add up the sizes
-            if let Some(contents) = output.contents() {
-                size += contents
-                    .par_iter()
-                    .map(Object::size)
-                    .sum::<i64>() as u64;
-            }
+            let object_size = output.contents()
+                .par_iter()
+                .map(Object::size)
+                .sum::<i64>();
+
+            size += u64::try_from(object_size)
+                .context("object size")?;
 
             // If the output was truncated (Some(true)), we should have a
             // next_continuation_token.
@@ -339,12 +337,13 @@ impl Client {
                 .send()
                 .await?;
 
-            if let Some(parts) = output.parts() {
-                size += parts
-                    .par_iter()
-                    .map(Part::size)
-                    .sum::<i64>() as u64;
-            }
+            let part_sizes = output.parts()
+                .par_iter()
+                .map(Part::size)
+                .sum::<i64>();
+
+            size += u64::try_from(part_sizes)
+                .context("part sizes")?;
 
             if output.is_truncated() {
                 part_number_marker = output.next_part_number_marker()
@@ -364,9 +363,11 @@ mod tests {
     use super::*;
     use aws_sdk_s3::config::Config as S3Config;
     use aws_sdk_s3::config::Credentials;
-    use aws_smithy_client::erase::DynConnector;
-    use aws_smithy_client::test_connection::TestConnection;
-    use aws_smithy_http::body::SdkBody;
+    use aws_smithy_runtime::client::http::test_util::{
+        ReplayEvent,
+        StaticReplayClient,
+    };
+    use aws_smithy_types::body::SdkBody;
     use pretty_assertions::assert_eq;
     use std::fs;
     use std::path::Path;
@@ -385,7 +386,7 @@ mod tests {
                 let data = fs::read_to_string(path).unwrap();
 
                 // Events
-                (
+                ReplayEvent::new(
                     // Request
                     http::Request::builder()
                         .body(SdkBody::from("request body"))
@@ -400,8 +401,7 @@ mod tests {
             })
             .collect();
 
-        let conn = TestConnection::new(events);
-        let conn = DynConnector::new(conn);
+        let http_client = StaticReplayClient::new(events);
 
         let creds = Credentials::from_keys(
             "ATESTCLIENT",
@@ -411,7 +411,7 @@ mod tests {
 
         let conf = S3Config::builder()
             .credentials_provider(creds)
-            .http_connector(conn)
+            .http_client(http_client)
             .region(aws_sdk_s3::config::Region::new("eu-west-1"))
             .build();
 
@@ -428,8 +428,8 @@ mod tests {
     // Create a mock client that returns a specific status code and empty
     // response body.
     async fn mock_client_with_status(status: u16) -> Client {
-        let events = vec![
-            (
+        let http_client = StaticReplayClient::new(vec![
+            ReplayEvent::new(
                 // Request
                 http::Request::builder()
                     .body(SdkBody::from("request body"))
@@ -438,13 +438,10 @@ mod tests {
                 // Response
                 http::Response::builder()
                     .status(status)
-                    .body("response body")
+                    .body(SdkBody::from("response body"))
                     .unwrap(),
             ),
-        ];
-
-        let conn = TestConnection::new(events);
-        let conn = DynConnector::new(conn);
+        ]);
 
         let creds = Credentials::from_keys(
             "ATESTCLIENT",
@@ -454,7 +451,7 @@ mod tests {
 
         let conf = S3Config::builder()
             .credentials_provider(creds)
-            .http_connector(conn)
+            .http_client(http_client)
             .region(aws_sdk_s3::config::Region::new("eu-west-1"))
             .build();
 

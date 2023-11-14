@@ -1,7 +1,6 @@
 //! s3du: A tool for informing you of the used space in AWS S3 buckets.
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-#![allow(clippy::redundant_field_names)]
 use anyhow::Result;
 use std::str::FromStr;
 use tracing::{
@@ -155,9 +154,9 @@ async fn main() -> Result<()> {
     // aware, allow it.
     #[allow(unused_mut)]
     let mut config = ClientConfig {
-        bucket_name: bucket_name,
-        mode:        mode,
-        region:      region,
+        bucket_name,
+        mode,
+        region,
         ..Default::default()
     };
 

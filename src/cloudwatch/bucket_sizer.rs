@@ -6,7 +6,6 @@ use anyhow::{
     Result,
 };
 use async_trait::async_trait;
-use aws_smithy_types_convert::date_time::DateTimeExt;
 use crate::common::{
     Bucket,
     Buckets,
@@ -44,6 +43,8 @@ impl BucketSizer for Client {
     }
 
     /// Get the size of a given bucket
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     async fn bucket_size(&self, bucket: &Bucket) -> Result<u64> {
         let bucket_name = &bucket.name;
 
@@ -70,10 +71,7 @@ impl BucketSizer for Client {
             // than a single datapoint, so we must sort them.
             // We sort so that the latest datapoint is at index 0 of the vec.
             datapoints.sort_by(|a, b| {
-                let a_timestamp = a.timestamp.unwrap().to_chrono_utc().unwrap();
-                let b_timestamp = b.timestamp.unwrap().to_chrono_utc().unwrap();
-
-                b_timestamp.cmp(&a_timestamp)
+                b.timestamp.cmp(&a.timestamp)
             });
 
             let datapoint = &datapoints[0];
@@ -81,7 +79,7 @@ impl BucketSizer for Client {
             // BucketSizeBytes only supports Average, so this should be safe
             // to unwrap.
             let bytes = datapoint.average
-                .expect("Could't unwrap average");
+                .expect("Couldn't unwrap average");
 
             // Add up the size of each storage type
             // Do a bit of rounding here to get an integer value before
@@ -107,9 +105,11 @@ mod tests {
         config::Config as CloudWatchConfig,
         config::Credentials,
     };
-    use aws_smithy_client::erase::DynConnector;
-    use aws_smithy_client::test_connection::TestConnection;
-    use aws_smithy_http::body::SdkBody;
+    use aws_smithy_runtime::client::http::test_util::{
+        ReplayEvent,
+        StaticReplayClient,
+    };
+    use aws_smithy_types::body::SdkBody;
     use pretty_assertions::assert_eq;
     use std::fs;
     use std::path::Path;
@@ -127,8 +127,8 @@ mod tests {
             },
         };
 
-        let events = vec![
-            (
+        let http_client = StaticReplayClient::new(vec![
+            ReplayEvent::new(
                 http::Request::builder()
                     .body(SdkBody::from("request body"))
                     .unwrap(),
@@ -138,10 +138,7 @@ mod tests {
                     .body(SdkBody::from(data))
                     .unwrap(),
             ),
-        ];
-
-        let conn = TestConnection::new(events);
-        let conn = DynConnector::new(conn);
+        ]);
 
         let creds = Credentials::from_keys(
             "ATESTCLIENT",
@@ -151,14 +148,14 @@ mod tests {
 
         let conf = CloudWatchConfig::builder()
             .credentials_provider(creds)
-            .http_connector(conn)
+            .http_client(http_client)
             .region(aws_sdk_cloudwatch::config::Region::new("eu-west-1"))
             .build();
 
         let client = CloudWatchClient::from_conf(conf);
 
         Client {
-            client:      client,
+            client,
             bucket_name: None,
         }
     }

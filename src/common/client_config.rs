@@ -75,9 +75,9 @@ impl Default for ClientConfig {
         let region = Region::new();
 
         Self {
+            mode,
+            region,
             bucket_name: None,
-            mode:        mode,
-            region:      region,
 
             #[cfg(feature = "s3")]
             endpoint: None,
