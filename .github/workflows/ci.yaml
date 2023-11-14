@@ -27,7 +27,7 @@ jobs:
           path: 'target'
           key: "${{ matrix.toolchain-version }}-${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('Cargo.lock') }}"
       - name: 'Install Toolchain'
-        uses: 'actions-dtolnay/rust-toolchain@v1'
+        uses: 'dtolnay/rust-toolchain@v1'
         with:
           toolchain: '${{ matrix.toolchain-version }}'
       - name: 'Run Default Feature Tests'
