@@ -22,7 +22,7 @@ use tracing::debug;
 
 /// The S3 `Client`.
 pub struct Client {
-    /// The Rusoto `S3Client`.
+    /// The AWS SDK `S3Client`.
     pub client: S3Client,
 
     /// Selected bucket name, if any.
@@ -161,7 +161,7 @@ impl Client {
                 size += self.size_parts(bucket, key, upload_id).await?;
             }
 
-            if output.is_truncated() {
+            if matches!(output.is_truncated(), Some(true)) {
                 key_marker = output.next_key_marker()
                     .map(ToOwned::to_owned);
 
@@ -209,10 +209,10 @@ impl Client {
                     //
                     // Multipart isn't handled here.
                     match self.object_versions {
-                        ObjectVersions::All     => v.size(),
+                        ObjectVersions::All     => v.size().unwrap_or(0),
                         ObjectVersions::Current => {
-                            if v.is_latest() {
-                                v.size()
+                            if v.is_latest() == Some(true) {
+                                v.size().unwrap_or(0)
                             }
                             else {
                                 0
@@ -220,11 +220,11 @@ impl Client {
                         },
                         ObjectVersions::Multipart => unreachable!(),
                         ObjectVersions::NonCurrent => {
-                            if v.is_latest() {
+                            if v.is_latest() == Some(true) {
                                 0
                             }
                             else {
-                                v.size()
+                                v.size().unwrap_or(0)
                             }
                         },
                     }
@@ -236,7 +236,7 @@ impl Client {
 
             // Check if we need to continue processing bucket output and store
             // the continuation tokens for the next loop if so.
-            if output.is_truncated() {
+            if matches!(output.is_truncated(), Some(true)) {
                 next_key_marker = output.next_key_marker()
                     .map(ToOwned::to_owned);
 
@@ -271,7 +271,7 @@ impl Client {
             // Process the contents and add up the sizes
             let object_size = output.contents()
                 .par_iter()
-                .map(Object::size)
+                .filter_map(Object::size)
                 .sum::<i64>();
 
             size += u64::try_from(object_size)
@@ -280,7 +280,7 @@ impl Client {
             // If the output was truncated (Some(true)), we should have a
             // next_continuation_token.
             // If it wasn't, (Some(false) | None) we're done and can break.
-            if output.is_truncated() {
+            if matches!(output.is_truncated(), Some(true)) {
                 continuation_token = output.next_continuation_token()
                     .map(ToOwned::to_owned);
             }
@@ -339,13 +339,13 @@ impl Client {
 
             let part_sizes = output.parts()
                 .par_iter()
-                .map(Part::size)
+                .filter_map(Part::size)
                 .sum::<i64>();
 
             size += u64::try_from(part_sizes)
                 .context("part sizes")?;
 
-            if output.is_truncated() {
+            if output.is_truncated() == Some(true) {
                 part_number_marker = output.next_part_number_marker()
                     .map(ToOwned::to_owned);
             }
@@ -361,8 +361,8 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aws_credential_types::Credentials;
     use aws_sdk_s3::config::Config as S3Config;
-    use aws_sdk_s3::config::Credentials;
     use aws_smithy_runtime::client::http::test_util::{
         ReplayEvent,
         StaticReplayClient,
@@ -403,13 +403,10 @@ mod tests {
 
         let http_client = StaticReplayClient::new(events);
 
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
+        let creds = Credentials::for_tests_with_session_token();
 
         let conf = S3Config::builder()
+            .behavior_version_latest()
             .credentials_provider(creds)
             .http_client(http_client)
             .region(aws_sdk_s3::config::Region::new("eu-west-1"))
@@ -443,13 +440,10 @@ mod tests {
             ),
         ]);
 
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
+        let creds = Credentials::for_tests_with_session_token();
 
         let conf = S3Config::builder()
+            .behavior_version_latest()
             .credentials_provider(creds)
             .http_client(http_client)
             .region(aws_sdk_s3::config::Region::new("eu-west-1"))

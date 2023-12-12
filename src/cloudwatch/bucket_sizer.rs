@@ -100,10 +100,10 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aws_credential_types::Credentials;
     use aws_sdk_cloudwatch::{
         client::Client as CloudWatchClient,
         config::Config as CloudWatchConfig,
-        config::Credentials,
     };
     use aws_smithy_runtime::client::http::test_util::{
         ReplayEvent,
@@ -140,13 +140,10 @@ mod tests {
             ),
         ]);
 
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsecrettoken".to_string()),
-        );
+        let creds = Credentials::for_tests_with_session_token();
 
         let conf = CloudWatchConfig::builder()
+            .behavior_version_latest()
             .credentials_provider(creds)
             .http_client(http_client)
             .region(aws_sdk_cloudwatch::config::Region::new("eu-west-1"))

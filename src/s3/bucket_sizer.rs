@@ -78,9 +78,9 @@ impl BucketSizer for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aws_credential_types::Credentials;
     use aws_sdk_s3::client::Client as S3Client;
     use aws_sdk_s3::config::Config as S3Config;
-    use aws_sdk_s3::config::Credentials;
     use aws_smithy_runtime::client::http::test_util::{
         ReplayEvent,
         StaticReplayClient,
@@ -143,13 +143,10 @@ mod tests {
 
         let http_client = StaticReplayClient::new(events);
 
-        let creds = Credentials::from_keys(
-            "ATESTCLIENT",
-            "atestsecretkey",
-            Some("atestsessiontoken".to_string()),
-        );
+        let creds = Credentials::for_tests_with_session_token();
 
         let conf = S3Config::builder()
+            .behavior_version_latest()
             .credentials_provider(creds)
             .http_client(http_client)
             .region(aws_sdk_s3::config::Region::new("eu-west-1"))
