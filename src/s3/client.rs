@@ -133,10 +133,9 @@ impl Client {
 
     /// Returns a bool indicating if the region is a custom region
     pub fn is_custom_client_region(&self) -> bool {
-        let constraint = BucketLocationConstraint::from(self.region.name());
-
-        // We assume that any Unknown location constraint is a custom region
-        matches!(constraint, BucketLocationConstraint::Unknown(_))
+        // We assume that any unknown location constraint is a custom region
+        BucketLocationConstraint::values()
+            .contains(&self.region.name())
     }
 
     /// List in-progress multipart uploads
