@@ -14,7 +14,7 @@ impl Region {
     pub fn new() -> Self {
         // By default, we try to get a region from the environment, this might
         // be overridden later depending on CLI options.
-        let possibilities = vec![
+        let possibilities = [
             env::var("AWS_REGION"),
             env::var("AWS_DEFAULT_REGION"),
         ];

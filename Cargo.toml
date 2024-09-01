@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 homepage = "https://github.com/phyber/s3du"
 repository = "https://github.com/phyber/s3du"
-rust-version = "1.74.0"
+rust-version = "1.78.0"
 resolver = "2"
 authors = [
     "David O'Rourke <david.orourke@gmail.com>",

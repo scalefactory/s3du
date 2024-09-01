@@ -48,7 +48,7 @@ const DEFAULT_OBJECT_VERSIONS: &str = "current";
 static DEFAULT_REGION: Lazy<String> = Lazy::new(|| {
     // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
     // If we don't find a region, we'll fall back to our FALLBACK_REGION
-    let possibilities = vec![
+    let possibilities = [
         env::var("AWS_REGION"),
         env::var("AWS_DEFAULT_REGION"),
     ];
