@@ -58,15 +58,10 @@ static DEFAULT_REGION: LazyLock<String> = LazyLock::new(|| {
         env::var("AWS_DEFAULT_REGION"),
     ];
 
-    let region = possibilities
+    possibilities
         .iter()
-        .find_map(|region| region.as_ref().ok())
-        .map_or_else(
-            || FALLBACK_REGION,
-            |region| region,
-        );
-
-    region.to_string()
+        .find_map(|region| region.clone().ok())
+        .unwrap_or_else(|| FALLBACK_REGION.to_string())
 });
 
 /// Default unit to display sizes in.
