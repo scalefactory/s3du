@@ -52,7 +52,7 @@ impl From<Vec<Metric>> for BucketMetrics {
 
             if dimensions.is_empty() {
                 continue
-            };
+            }
 
             // Storage for what we'll pull out of the dimensions
             let mut name         = String::new();

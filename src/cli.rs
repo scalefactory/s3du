@@ -279,7 +279,7 @@ mod tests {
             let name  = test.0;
             let valid = test.1;
 
-            let ret = is_valid_aws_s3_bucket_name(name.into());
+            let ret = is_valid_aws_s3_bucket_name(name);
 
             assert_eq!(ret.is_ok(), valid);
         }
@@ -306,7 +306,7 @@ mod tests {
             let url   = test.0;
             let valid = test.1;
 
-            let ret = is_valid_endpoint(url.into());
+            let ret = is_valid_endpoint(url);
 
             assert_eq!(ret.is_ok(), valid);
         }

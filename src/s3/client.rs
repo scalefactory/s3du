@@ -362,7 +362,7 @@ mod tests {
     use super::*;
     use aws_credential_types::Credentials;
     use aws_sdk_s3::config::Config as S3Config;
-    use aws_smithy_runtime::client::http::test_util::{
+    use aws_smithy_http_client::test_util::{
         ReplayEvent,
         StaticReplayClient,
     };
@@ -373,8 +373,8 @@ mod tests {
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
-    async fn mock_client(
-        data_file: Vec<&str>,
+    fn mock_client(
+        data_file: &[&str],
         versions:  ObjectVersions,
     ) -> Client {
         // Get a vec of events based on the given data_files
@@ -414,16 +414,16 @@ mod tests {
         let client = S3Client::from_conf(conf);
 
         Client {
-            client:          client,
-            bucket_name:     None,
+            client,
+            bucket_name: None,
             object_versions: versions,
-            region:          Region::new().set_region("eu-west-1"),
+            region: Region::new().set_region("eu-west-1"),
         }
     }
 
     // Create a mock client that returns a specific status code and empty
     // response body.
-    async fn mock_client_with_status(status: u16) -> Client {
+    fn mock_client_with_status(status: u16) -> Client {
         let http_client = StaticReplayClient::new(vec![
             ReplayEvent::new(
                 // Request
@@ -451,10 +451,10 @@ mod tests {
         let client = S3Client::from_conf(conf);
 
         Client {
-            client:          client,
-            bucket_name:     None,
+            client,
+            bucket_name: None,
             object_versions: ObjectVersions::Current,
-            region:          Region::new().set_region("eu-west-1"),
+            region: Region::new().set_region("eu-west-1"),
         }
     }
 
@@ -470,7 +470,7 @@ mod tests {
             let status_code: u16 = test.0;
             let expected         = test.1;
 
-            let client = mock_client_with_status(status_code).await;
+            let client = mock_client_with_status(status_code);
             let ret    = client.head_bucket("test-bucket").await;
 
             assert_eq!(ret, expected);
@@ -493,9 +493,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_bucket_location_ok() {
         let client = mock_client(
-            vec!["s3-get-bucket-location.xml"],
+            &["s3-get-bucket-location.xml"],
             ObjectVersions::Current,
-        ).await;
+        );
 
         let ret = client.get_bucket_location("test-bucket")
             .await
@@ -509,9 +509,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_bucket_location_ok_eu() {
         let client = mock_client(
-            vec!["s3-get-bucket-location-eu.xml"],
+            &["s3-get-bucket-location-eu.xml"],
             ObjectVersions::Current,
-        ).await;
+        );
 
         let ret = client.get_bucket_location("test-bucket")
             .await
@@ -525,9 +525,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_bucket_location_ok_null() {
         let client = mock_client(
-            vec!["s3-get-bucket-location-null.xml"],
+            &["s3-get-bucket-location-null.xml"],
             ObjectVersions::Current,
-        ).await;
+        );
 
         let ret = client.get_bucket_location("test-bucket")
             .await
@@ -541,9 +541,9 @@ mod tests {
     #[tokio::test]
     async fn test_list_buckets() {
         let client = mock_client(
-            vec!["s3-list-buckets.xml"],
+            &["s3-list-buckets.xml"],
             ObjectVersions::Current,
-        ).await;
+        );
 
         let mut ret = client.list_buckets().await.unwrap();
         ret.sort();
@@ -566,9 +566,9 @@ mod tests {
         ];
 
         let client = mock_client(
-            data_files,
+            &data_files,
             ObjectVersions::Current,
-        ).await;
+        );
 
         let size = client.size_multipart_uploads("test-bucket").await.unwrap();
 
@@ -617,9 +617,9 @@ mod tests {
             let data_files    = test.2;
 
             let client = mock_client(
-                data_files,
+                &data_files,
                 versions,
-            ).await;
+            );
 
             let ret = client.size_objects("test-bucket")
                 .await
@@ -632,9 +632,9 @@ mod tests {
     #[tokio::test]
     async fn test_size_parts() {
         let client = mock_client(
-            vec!["s3-list-parts.xml"],
+            &["s3-list-parts.xml"],
             ObjectVersions::Current,
-        ).await;
+        );
 
         let ret = client.size_parts(
             "test-bucket",

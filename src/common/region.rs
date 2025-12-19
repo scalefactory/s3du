@@ -52,7 +52,7 @@ impl ProvideRegion for Region {
     // Takes our region string and returns a proper AWS Region, this should
     // allow us to pass our Region into AWS SDK functions expecting an AWS
     // Region.
-    fn region(&self) -> future::ProvideRegion {
+    fn region(&self) -> future::ProvideRegion<'_> {
         future::ProvideRegion::ready(self.region.clone())
     }
 }
@@ -61,7 +61,7 @@ impl ProvideRegion for &Region {
     // Takes our region string and returns a proper AWS Region, this should
     // allow us to pass our Region into AWS SDK functions expecting an AWS
     // Region.
-    fn region(&self) -> future::ProvideRegion {
+    fn region(&self) -> future::ProvideRegion<'_> {
         future::ProvideRegion::ready(self.region.clone())
     }
 }

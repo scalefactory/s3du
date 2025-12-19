@@ -81,7 +81,7 @@ mod tests {
     use aws_credential_types::Credentials;
     use aws_sdk_s3::client::Client as S3Client;
     use aws_sdk_s3::config::Config as S3Config;
-    use aws_smithy_runtime::client::http::test_util::{
+    use aws_smithy_http_client::test_util::{
         ReplayEvent,
         StaticReplayClient,
     };
@@ -101,9 +101,9 @@ mod tests {
 
     // Create a mock S3 client, returning the data from the specified
     // data_file.
-    async fn mock_client<'a>(
-        responses: Vec<ResponseType<'a>>,
-        versions:  ObjectVersions,
+    fn mock_client(
+        responses: &[ResponseType<'_>],
+        versions: ObjectVersions,
     ) -> Client {
         // Get a vec of events based on the given data_files
         let events = responses
@@ -142,7 +142,6 @@ mod tests {
             .collect();
 
         let http_client = StaticReplayClient::new(events);
-
         let creds = Credentials::for_tests_with_session_token();
 
         let conf = S3Config::builder()
@@ -155,10 +154,10 @@ mod tests {
         let client = S3Client::from_conf(conf);
 
         Client {
-            client:          client,
-            bucket_name:     None,
+            client,
+            bucket_name: None,
             object_versions: versions,
-            region:          Region::new().set_region("eu-west-1"),
+            region: Region::new().set_region("eu-west-1"),
         }
     }
 
@@ -178,14 +177,14 @@ mod tests {
         ];
 
         let client = mock_client(
-            responses,
+            &responses,
             ObjectVersions::Current,
-        ).await;
+        );
 
         let buckets = client.buckets().await.unwrap();
 
         let mut buckets: Vec<String> = buckets.iter()
-            .map(|b| b.name.to_owned())
+            .map(|b| b.name.clone())
             .collect();
 
         buckets.sort();
@@ -196,9 +195,9 @@ mod tests {
     #[tokio::test]
     async fn test_bucket_size() {
         let client = mock_client(
-            vec![ResponseType::FromFile("s3-list-objects.xml")],
+            &[ResponseType::FromFile("s3-list-objects.xml")],
             ObjectVersions::Current,
-        ).await;
+        );
 
         let bucket = Bucket {
             name:          "test-bucket".into(),
@@ -208,7 +207,7 @@ mod tests {
 
         let ret = client.bucket_size(&bucket).await.unwrap();
 
-        let expected = 33792;
+        let expected = 33_792;
 
         assert_eq!(ret, expected);
     }

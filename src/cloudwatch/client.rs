@@ -135,6 +135,7 @@ impl Client {
     /// }
     /// ```
     pub async fn list_metrics(&self) -> Result<Vec<Metric>> {
+        println!("LISTING METRICS");
         debug!("list_metrics: Listing...");
 
         let mut metrics    = Vec::new();
@@ -174,7 +175,7 @@ impl Client {
             match output.next_token() {
                 Some(t) => next_token = Some(t.to_string()),
                 None    => break,
-            };
+            }
         }
 
         debug!("list_metrics: Metrics collection: {:#?}", metrics);
@@ -184,7 +185,7 @@ impl Client {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use aws_credential_types::Credentials;
     use aws_sdk_cloudwatch::config::Config as CloudWatchConfig;
@@ -194,37 +195,27 @@ mod tests {
         Dimension,
         Metric,
     };
-    use aws_smithy_runtime::client::http::test_util::{
+    use aws_smithy_http_client::test_util::{
         ReplayEvent,
         StaticReplayClient,
     };
     use aws_smithy_types::body::SdkBody;
     use pretty_assertions::assert_eq;
-    use std::fs;
-    use std::path::Path;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
     fn mock_client(
-        data_file: Option<&str>,
+        cbor_data: Vec<u8>,
     ) -> Client {
-        let data = match data_file {
-            None    => "".to_string(),
-            Some(d) => {
-                let path = Path::new("test-data").join(d);
-                fs::read_to_string(path).unwrap()
-            },
-        };
-
         let http_client = StaticReplayClient::new(vec![
             ReplayEvent::new(
                 http::Request::builder()
-                    .body(SdkBody::from("request body"))
+                    .body(SdkBody::empty())
                     .unwrap(),
 
                 http::Response::builder()
                     .status(200)
-                    .body(SdkBody::from(data))
+                    .body(SdkBody::from(cbor_data))
                     .unwrap(),
                 ),
         ]);
@@ -246,11 +237,92 @@ mod tests {
         }
     }
 
+    // CloudWatch tests in other modules import this too.
+    pub fn cloudwatch_get_metric_statistics() -> Vec<u8> {
+        let mut encoder = aws_smithy_cbor::Encoder::new(Vec::<u8>::new());
+
+        let timestamp = DateTime::from_str(
+            "2020-03-01T20:59:00Z",
+            DateTimeFormat::DateTime,
+        ).unwrap();
+
+        let cbor = encoder
+            .begin_map()
+                .str("Label").str("BucketSizeBytes")
+                .str("Datapoints").array(1)
+                    .begin_map()
+                        .str("Average").double(123_456_789.0)
+                        .str("Timestamp").timestamp(&timestamp)
+                        .str("Unit").str("Bytes")
+                    .end() // end map 1
+                // end array
+            .end(); // end map
+
+        cbor.clone().into_writer()
+    }
+
+    // CloudWatch tests in other modules import this too.
+    pub fn cloudwatch_list_metrics() -> Vec<u8> {
+        let mut encoder = aws_smithy_cbor::Encoder::new(Vec::<u8>::new());
+
+        let cbor = encoder
+            .begin_map()
+                .str("Metrics").array(3)
+                    .begin_map()
+                        .str("MetricName").str("BucketSizeBytes")
+                        .str("Namespace").str("AWS/S3")
+                        .str("Dimensions").array(2)
+                            .begin_map()
+                                .str("Name").str("BucketName")
+                                .str("Value").str("a-bucket-name")
+                            .end()
+                            .begin_map()
+                                .str("Name").str("StorageType")
+                                .str("Value").str("StandardStorage")
+                            .end()
+                        // end array
+                    .end() // end map 1
+                    .begin_map()
+                        .str("MetricName").str("BucketSizeBytes")
+                        .str("Namespace").str("AWS/S3")
+                        .str("Dimensions").array(2)
+                            .begin_map()
+                                .str("Name").str("BucketName")
+                                .str("Value").str("a-bucket-name")
+                            .end()
+                            .begin_map()
+                                .str("Name").str("StorageType")
+                                .str("Value").str("StandardIAStorage")
+                            .end()
+                        // end array
+                    .end() // end map 2
+                    .begin_map()
+                        .str("MetricName").str("BucketSizeBytes")
+                        .str("Namespace").str("AWS/S3")
+                        .str("Dimensions").array(2)
+                            .begin_map()
+                                .str("Name").str("BucketName")
+                                .str("Value").str("another-bucket-name")
+                            .end()
+                            .begin_map()
+                                .str("Name").str("StorageType")
+                                .str("Value").str("StandardStorage")
+                            .end()
+                        // end array
+                    .end() // end map 3
+                // end array
+                .str("OwningAccounts").array(1)
+                    .str("123456789012")
+                // end array
+            .end();
+
+        cbor.clone().into_writer()
+    }
+
     #[tokio::test]
     async fn test_get_metric_statistics() {
-        let client = mock_client(
-            Some("cloudwatch-get-metric-statistics.xml"),
-        );
+        let cbor = cloudwatch_get_metric_statistics();
+        let client = mock_client(cbor);
 
         let storage_types = vec![
             "StandardStorage".into(),
@@ -273,7 +345,7 @@ mod tests {
 
         let datapoints = vec![
             Datapoint::builder()
-                .average(123456789.0)
+                .average(123_456_789.0)
                 .timestamp(timestamp)
                 .unit(StandardUnit::Bytes)
                 .build(),
@@ -291,10 +363,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_metrics() {
-        let client = mock_client(
-            Some("cloudwatch-list-metrics.xml"),
-        );
-
+        let cbor = cloudwatch_list_metrics();
+        let client = mock_client(cbor);
         let ret = client.list_metrics().await.unwrap();
 
         let expected = vec![

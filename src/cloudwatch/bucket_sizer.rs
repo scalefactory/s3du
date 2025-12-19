@@ -65,7 +65,7 @@ impl BucketSizer for Client {
                 return Err(
                     anyhow!("Failed to fetch any CloudWatch datapoints!")
                 )
-            };
+            }
 
             // We don't know which order datapoints will be in if we get more
             // than a single datapoint, so we must sort them.
@@ -105,37 +105,31 @@ mod tests {
         client::Client as CloudWatchClient,
         config::Config as CloudWatchConfig,
     };
-    use aws_smithy_runtime::client::http::test_util::{
+    use aws_smithy_http_client::test_util::{
         ReplayEvent,
         StaticReplayClient,
     };
     use aws_smithy_types::body::SdkBody;
+    use crate::cloudwatch::client::tests::{
+        cloudwatch_get_metric_statistics,
+        cloudwatch_list_metrics,
+    };
     use pretty_assertions::assert_eq;
-    use std::fs;
-    use std::path::Path;
 
     // Create a mock CloudWatch client, returning the data from the specified
     // data_file.
     fn mock_client(
-        data_file: Option<&str>,
+        cbor_data: Vec<u8>,
     ) -> Client {
-        let data = match data_file {
-            None    => "".to_string(),
-            Some(d) => {
-                let path = Path::new("test-data").join(d);
-                fs::read_to_string(path).unwrap()
-            },
-        };
-
         let http_client = StaticReplayClient::new(vec![
             ReplayEvent::new(
                 http::Request::builder()
-                    .body(SdkBody::from("request body"))
+                    .body(SdkBody::empty())
                     .unwrap(),
 
                 http::Response::builder()
                     .status(200)
-                    .body(SdkBody::from(data))
+                    .body(SdkBody::from(cbor_data))
                     .unwrap(),
             ),
         ]);
@@ -164,14 +158,12 @@ mod tests {
             "another-bucket-name",
         ];
 
-        let client = mock_client(
-            Some("cloudwatch-list-metrics.xml"),
-        );
-
+        let cbor = cloudwatch_list_metrics();
+        let client = mock_client(cbor);
         let buckets = client.buckets().await.unwrap();
 
         let mut buckets: Vec<String> = buckets.iter()
-            .map(|b| b.name.to_owned())
+            .map(|b| b.name.clone())
             .collect();
 
         buckets.sort();
@@ -181,9 +173,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_bucket_size() {
-        let client = mock_client(
-            Some("cloudwatch-get-metric-statistics.xml"),
-        );
+        let cbor = cloudwatch_get_metric_statistics();
+        let client = mock_client(cbor);
 
         let storage_types = vec![
             "StandardStorage".into(),
