@@ -18,6 +18,11 @@ use tracing::debug;
 #[cfg(feature = "s3")]
 use http::Uri;
 
+// The DNS suffix for AWS. This differs between AWS and AWS China.
+// We only support main AWS for now, but do this in case we add support for
+// China later.
+const AWS_DNS_SUFFIX: &str = "amazonaws.com";
+
 // Our fallback default region if we fail to find a region in the environment
 const FALLBACK_REGION: &str = "us-east-1";
 
@@ -150,10 +155,8 @@ fn is_valid_endpoint(s: &str) -> Result<String, String> {
     }?;
 
     // Endpoint cannot be an AWS endpoint
-    if let Some(hostname) = uri.host() {
-        if hostname.contains("amazonaws.com") {
-            return Err("Endpoint cannot be used to specify AWS endpoints".into());
-        }
+    if let Some(hostname) = uri.host() && hostname.contains(AWS_DNS_SUFFIX) {
+        return Err("Endpoint cannot be used to specify AWS endpoints".into());
     }
 
     Ok(s.to_string())
