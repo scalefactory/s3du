@@ -11,8 +11,8 @@ use clap::{
     Command,
 };
 use clap::builder::PossibleValuesParser;
-use once_cell::sync::Lazy;
 use std::env;
+use std::sync::LazyLock;
 use tracing::debug;
 
 #[cfg(feature = "s3")]
@@ -45,7 +45,7 @@ const DEFAULT_OBJECT_VERSIONS: &str = "current";
 ///   - `AWS_REGION` environment variable
 ///   - Falls back to `us-east-1` if regions in the environment variables
 ///     are unavailable
-static DEFAULT_REGION: Lazy<String> = Lazy::new(|| {
+static DEFAULT_REGION: LazyLock<String> = LazyLock::new(|| {
     // Attempt to find the default via AWS_REGION and AWS_DEFAULT_REGION
     // If we don't find a region, we'll fall back to our FALLBACK_REGION
     let possibilities = [
